@@ -1,29 +1,94 @@
-import { parseCsv, generateKaplanMeierData, getCohort } from '../syntheticDataGenerator.js';
+import { generateKaplanMeierData, getCohort } from '../syntheticDataGenerator.js';
 
 
 export async function displayResults(isRetrospective, observedIncidenceRate, predictedIncidenceRate) {
-    /* global localforage */
-    displayResultsHTML();
-    await renderIncidenceChart(observedIncidenceRate, predictedIncidenceRate);
-
-    const MAX_PROFILES = 50_000;
-    const cohort = [];
-    let count = 0;
-
-    for await (const profile of getCohort({ prefix: 'task_', remapIds: true })) {
-        cohort.push(profile);
-        count++;
-
-        if (count >= MAX_PROFILES) break;
+    // Validate inputs with detailed error messages
+    if (typeof isRetrospective !== 'boolean') {
+        throw new Error('Need boolean isRetrospective');
     }
-    const data = await generateKaplanMeierData(cohort);
-    await renderKaplanMeierChart(data);
+
+    if (!Array.isArray(observedIncidenceRate) || !observedIncidenceRate.length) {
+        throw new Error('Missing observed data');
+    }
+
+    if (!Array.isArray(predictedIncidenceRate) || !predictedIncidenceRate.length) {
+        throw new Error('Missing predicted data');
+    }
+
+
+    try {
+        // UI State Management
+        toggleResultsVisibility();
+
+        // Parallelize independent operations where possible
+        await Promise.all([
+            renderIncidenceChart(observedIncidenceRate, predictedIncidenceRate),
+            processCohortAndRenderKaplanMeier()
+        ]);
+    } catch (error) {
+        console.error('displayResults failed: ', error);
+        throw error;
+    }
+}
+
+
+async function processCohortAndRenderKaplanMeier() {
+    const MAX_PROFILES = 50_000;
+    const cohort = await loadCohortProfiles(MAX_PROFILES);
+
+    if (cohort.length === 0) {
+        throw new Error('No cohort profiles available for Kaplan-Meier analysis');
+    }
+
+    const kmData = await generateKaplanMeierData(cohort);
+
+    if (!kmData || kmData.length === 0) {
+        throw new Error('Kaplan-Meier data generation failed');
+    }
+
+    try {
+        await renderKaplanMeierChart(kmData);
+        cohort.splice(0, cohort.length);
+
+    } catch (error) {
+        console.error('Failed to render chart:', error);
+        throw error;
+    }
+}
+
+
+async function loadCohortProfiles(maxProfiles) {
+    if (typeof maxProfiles != 'number' || isNaN(maxProfiles)) {
+        throw new Error('Max profiles must be number');
+    }
+
+    const cohort = [];
+    let profileCount = 0;
+    const cohortIterator = getCohort({ prefix: 'task_', remapIds: true });
+
+    if (!cohortIterator || typeof cohortIterator[Symbol.asyncIterator] !== 'function') {
+        throw new Error('Cohort iterator is not an async iterable');
+    }
+
+    try {
+        for await (const profile of cohortIterator) {
+            cohort.push(profile);
+            profileCount++;
+
+            if (profileCount >= maxProfiles) break;
+        }
+
+        return cohort;
+    } catch (error) {
+        console.error(`Failed to load cohort profiles: ${error.message}`);
+        throw error;
+    }
 }
 
 
 function renderKaplanMeierChart(kmCurveData) {
-    if (!kmCurveData) {
-        throw new Error('Kaplan-Meier data not present');
+    if (!kmCurveData || !Array.isArray(kmCurveData)) {
+        throw new TypeError('Missing or invalid input');
     }
 
     kmCurveData = kmCurveData.filter(d =>
@@ -31,7 +96,19 @@ function renderKaplanMeierChart(kmCurveData) {
     );
 
     // Get the container dimensions from CSS
-    const container = d3.select('#kaplanMeierCurve').node();
+    const htmlElement = d3.select('#kaplanMeierCurve');
+
+    if (!htmlElement) {
+        throw new Error('HTML not found');
+    }
+
+    const currentChart = document.getElementById('#kaplanMeierCurve svg');
+
+    if (currentChart) {
+        currentChart.destroy();
+    }
+
+    const container = htmlElement.node();
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
@@ -47,9 +124,9 @@ function renderKaplanMeierChart(kmCurveData) {
     const height = containerHeight - margin.top - margin.bottom;
 
     // Clear previous chart
-    d3.select('#kaplanMeierCurve').html('');
+    htmlElement.html('');
 
-    const svg = d3.select('#kaplanMeierCurve')
+    const svg = htmlElement
         .append('svg')
         .attr('viewBox', `0 0 ${containerWidth} ${containerHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
@@ -134,6 +211,10 @@ function renderKaplanMeierChart(kmCurveData) {
     // Tooltip setup
     const tooltip = d3.select('#tooltip');
 
+    if (!tooltip) {
+        throw new Error('No tooltip provided');
+    }
+
     // Draw points for tooltip interaction
     svg.selectAll('circle')
         .data(kmCurveData)
@@ -165,31 +246,7 @@ function renderKaplanMeierChart(kmCurveData) {
 }
 
 
-function adisplayResultsHTML() {
-    const prospectiveGroup = document.querySelector('#prospective');
-    const retrospectiveGroup = document.querySelector('#retrospective');
-    const tutorial = document.querySelector('#tutorial');
-    const sharedParameters = document.getElementById('sharedParameters');
-    const resultsDiv = document.getElementById('results');
-
-    if (!prospectiveGroup || !retrospectiveGroup || !resultsDiv || !sharedParameters) {
-        throw new Error('displayResults failed: Required elements not found.');
-    }
-    console.log(prospectiveGroup.style.display);
-    console.log(retrospectiveGroup.style.display);
-    console.log(tutorial.style.display);
-    console.log(sharedParameters.style.display);
-    console.log(resultsDiv.classList.contains('hidden'));
-
-    prospectiveGroup.style.display = 'none';
-    retrospectiveGroup.style.display = 'none';
-    tutorial.style.display = 'none';
-    sharedParameters.style.display = 'none';
-    resultsDiv.classList.remove('hidden');
-}
-
-
-export function displayResultsHTML() {
+export function toggleResultsVisibility() {
     const prospectiveGroup = document.querySelector('#prospective');
     const retrospectiveGroup = document.querySelector('#retrospective');
     const tutorial = document.querySelector('#tutorial');
@@ -198,7 +255,7 @@ export function displayResultsHTML() {
     const resultsDiv = document.getElementById('results');
 
     if (!prospectiveGroup || !retrospectiveGroup || !generateButton || !resultsDiv || !sharedParameters) {
-        throw new Error('displayResults failed: Required elements not found.');
+        throw new Error('HTML elements not found.');
     }
 
     if (resultsDiv.classList.contains('hidden')) {
@@ -222,6 +279,10 @@ export function displayResultsHTML() {
 
 export async function renderIncidenceChart(observedIncidenceRate, predictedIncidenceRate) {
     /* global Chart */
+    if (!observedIncidenceRate || !predictedIncidenceRate || Array.isArray(observedIncidenceRate) || Array.isArray(predictedIncidenceRate)) {
+        throw new Error('Incidence Rates must be arrays');
+    }
+
     const observedRates = observedIncidenceRate.map(entry => entry.rate);
     const predictedRates = predictedIncidenceRate.map(entry => entry.rate);
 
@@ -264,6 +325,7 @@ export async function renderIncidenceChart(observedIncidenceRate, predictedIncid
                         label: function(tooltipItem) {
                             const datasetLabel = tooltipItem.dataset.label;
                             const value = tooltipItem.raw.toFixed(4);
+
                             return `${datasetLabel} - Age ${tooltipItem.label}: ${value}`;
                         }
                     }
@@ -287,84 +349,42 @@ export async function renderIncidenceChart(observedIncidenceRate, predictedIncid
 
     const chartExists = Chart?.getChart('expectedIncidenceChartProspective');
 
-    if (chartExists) chartExists.destroy();
+    if (chartExists) {
+        chartExists.destroy();
+    }
 
-    new Chart(ctx, config);
-}
+    try {
+        new Chart(ctx, config);
+    }
+    catch (error) {
+        console.error("Failed to create chart:", error);
+        ctx.canvas.parentElement.innerHTML = '<p class="chart-error">Chart could not be displayed</p>';
 
-
-export function renderHistogram(counts, element, numberOfProfiles) {
-    window.requestAnimationFrame(() => {
-        const canvas = document.getElementById(element);
-        const ctx = canvas.getContext('2d');
-
-        const width = canvas.width;
-        const height = canvas.height;
-        const barWidth = width / 3; // 3 bars for 0, 1, and 2
-
-        // Clear the canvas
-        ctx.clearRect(0, 0, width, height);
-
-        // Draw histogram bars for counts of 0, 1, and 2
-        for (let i = 0; i <= 2; i++) {
-            let scaledCount = counts[i];
-
-            if (scaledCount > 1) {
-                scaledCount /= numberOfProfiles;
-            }
-
-            // Skip drawing if the scaled count is zero
-            if (scaledCount <= 0) continue;
-
-            const barHeight = scaledCount * height; // Scale the height based on the adjusted counts
-            const x = i * barWidth; // X position of the bar
-            const y = height - barHeight; // Y position (bottom of the canvas)
-
-            ctx.fillStyle = 'blue'; // Set color for the bars
-            ctx.fillRect(x, y, barWidth - 2, barHeight); // Draw the bar
-
-            ctx.fillStyle = 'black'; // Set color for the text
-            ctx.fillText(scaledCount.toFixed(2), x + (barWidth / 2) - 10, y - 10); // Draw the scaled count above the bar
-        }
-
-        // Add x-axis labels
-        ctx.fillStyle = 'black';
-        ctx.fillText('0', barWidth / 2 - 10, height - 5); // Label for 0
-        ctx.fillText('1', barWidth * 1.5 - 10, height - 5); // Label for 1
-        ctx.fillText('2', barWidth * 2.5 - 10, height - 5); // Label for 2
-
-        // Add y-axis label (optional)
-        ctx.save(); // Save the current context
-        ctx.rotate(-Math.PI / 2); // Rotate context to draw y-axis label
-        ctx.fillText('Count', -height / 2, 20); // Position of the y-axis label
-        ctx.restore(); // Restore the context to original state
-    });
-}
-
-
-export function displaySNP(snp) {
-    document.getElementById('snpDisplay').textContent = `SNP: rs${snp}`;
+        throw error;
+    }
 }
 
 
 export function createTable(header, data, tableId = 'groupedTable', useDividers = true) {
-    if (!data || !data.length) {
-        console.error('No data provided for table');
-        return;
+    if (!header || !data || !data.length) {
+        throw new Error('Missing or invalid input');
     }
 
     const tableContainer = document.getElementById(tableId) || document.createElement('div');
+
     tableContainer.id = tableId;
     tableContainer.innerHTML = '';
     document.body.appendChild(tableContainer);
 
     const table = document.createElement('table');
+
     table.style.borderCollapse = 'collapse';
     table.style.width = '100%';
     table.style.margin = '20px 0';
 
     // Create header row
     const headerRow = document.createElement('tr');
+
     header.forEach(headerText => {
         const th = document.createElement('th');
         th.textContent = headerText;
@@ -408,24 +428,5 @@ export function createTable(header, data, tableId = 'groupedTable', useDividers 
         });
 
         table.appendChild(tr);
-
-        // Add optional divider
-        if (useDividers && rowIndex < data.length - 1) {
-            const dividerRow = document.createElement('tr');
-            const dividerCell = document.createElement('td');
-            dividerCell.colSpan = header.length;
-            dividerCell.style.height = '2px';
-            dividerCell.style.backgroundColor = '#eee';
-            dividerRow.appendChild(dividerCell);
-            table.appendChild(dividerRow);
-        }
     });
-
-    tableContainer.appendChild(table);
-}
-
-
-export function renderSNPHistograms(randomSnp, occurrence, numberOfProfiles, maxNumberOfProfiles) {
-    renderHistogram(occurrence, 'generatedHistogram', numberOfProfiles > maxNumberOfProfiles ? maxNumberOfProfiles : numberOfProfiles);
-    renderHistogram(randomSnp[0].alleleDosageFrequency, 'expectedHistogram', numberOfProfiles > maxNumberOfProfiles ? maxNumberOfProfiles : numberOfProfiles);
 }
