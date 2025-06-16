@@ -279,8 +279,8 @@ export function toggleResultsVisibility() {
 
 export async function renderIncidenceChart(observedIncidenceRate, predictedIncidenceRate) {
     /* global Chart */
-    if (!observedIncidenceRate || !predictedIncidenceRate || Array.isArray(observedIncidenceRate) || Array.isArray(predictedIncidenceRate)) {
-        throw new Error('Incidence Rates must be arrays');
+    if (!observedIncidenceRate || !predictedIncidenceRate) {
+        throw new Error('Missing input');
     }
 
     const observedRates = observedIncidenceRate.map(entry => entry.rate);

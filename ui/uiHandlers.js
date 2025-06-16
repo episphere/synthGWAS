@@ -4,7 +4,7 @@ import {
     handleSnpsInfo,
     downloadVcfFromChunks,
     downloadCohortFromChunks,
-    loadPopulation, showAlert, hideAlert, displayResults, displayResultsHTML
+    loadPopulation, showAlert, hideAlert, displayResults, toggleResultsVisibility, updateLoadingProgress
 } from '../syntheticDataGenerator.js';
 import { GENDER, DEFAULT_CHUNK_SIZE } from '../constants.js';
 
@@ -73,9 +73,10 @@ async function handleDataGeneration(params) {
 
     /* global localforage */
     loadingScreen.style.display = 'flex';
+    document.getElementById('loadingText').textContent = 'Modeling Hazard Rates...';
+    updateLoadingProgress(0);
 
     let snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b;
-
     const incidenceRateFile = '../data/age_specific_breast_cancer_incidence_rates.csv';
     const pgsModelFile = 'data/pgs_model_test.txt';
 
@@ -94,6 +95,9 @@ async function handleDataGeneration(params) {
 
     try {
         const populationData = await localforage.getItem('populationData');
+        setTimeout(() => {
+            document.getElementById('loadingText').textContent = 'Generating Synthetic Cohort...';
+        }, 50);
 
         let config = {
             totalProfiles: Number(numberOfProfiles),
@@ -164,7 +168,7 @@ export function initializeUI(config) {
 
 
     document.getElementById('reset').addEventListener('click', async () => {
-        await displayResultsHTML();
+        await toggleResultsVisibility();
     });
 
 
@@ -177,11 +181,15 @@ export function initializeUI(config) {
         }
     });
 
-
+    // TODO: Currently only the Female gender is allowed
+    // <option value="${GENDER.BOTH}" selected>Both</option>
+    //         <option value="${GENDER.MALE}">Male</option>
     document.getElementById('genderSelect').innerHTML = `
-        <option value="${GENDER.BOTH}" selected>Both</option>
-        <option value="${GENDER.MALE}">Male</option>
         <option value="${GENDER.FEMALE}">Female</option>
+    `;
+
+    document.getElementById('pgsId').innerHTML = `
+        <option value="${'PGS000004'}">Breast Cancer (PGS000004)</option>
     `;
 
     document.getElementById('prospectiveGenerate').addEventListener('click', async () => {

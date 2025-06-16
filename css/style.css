@@ -182,7 +182,7 @@ label {
     margin: 0 0.5rem;
 }
 
-.country-select, .gender-select {
+.country-select, .gender-select, .pgs-select {
     width: 100%;
     max-width: 300px;
     padding: 12px 20px 12px 16px;

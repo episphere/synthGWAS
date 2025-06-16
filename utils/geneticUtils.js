@@ -1,11 +1,10 @@
 import { asyncPool, httpRequest } from './httpUtils.js';
-import { downloadCohortFromChunks, sleep } from './generalUtils.js';
-import { parseFile } from './fileParser.js';
-import { processSnpData } from './dataProcessingUtils.js';
-import { nelderMead } from './nelderMead.js';
+import { loadScore, processSnpData, parseFile, nelderMead } from '../syntheticDataGenerator.js';
 import { INDEX } from '../constants.js';
 
 
+/*
+TODO: Currently, RS IDs are not used
 export async function getRsIds(snpsInfo, apiKey) {
     const requestInterval = 100; // 100ms between different SNPs
     const retryDelay = 150;       // 50ms between retries for same SNP
@@ -56,6 +55,7 @@ export async function getRsIds(snpsInfo, apiKey) {
 
     return snpsInfo;
 }
+*/
 
 
 export async function getChromosomeAndPosition(rsIDs, genomeBuild, apiKey) {
@@ -63,18 +63,18 @@ export async function getChromosomeAndPosition(rsIDs, genomeBuild, apiKey) {
 
     return await asyncPool(requestLimit, rsIDs, async (rsID) => {
         rsID = rsID.split('rs')[1];
+
         const eutilsURL = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=snp&id=${rsID}&retmode=json&api_key=${apiKey}`;
+        const response = await httpRequest(eutilsURL);
+        const assembly = response.refsnp[0].placements_with_allele.filter(
+            (item) => item.assembly_name === genomeBuild
+        )[0];
+
+        if (!assembly) {
+            throw new Error(`Genome build ${genomeBuild} not found for rsID ${rsID}.`);
+        }
 
         try {
-            const response = await httpRequest(eutilsURL);
-            const assembly = response.refsnp[0].placements_with_allele.filter(
-                (item) => item.assembly_name === genomeBuild
-            )[0];
-
-            if (!assembly) {
-                throw new Error(`Genome build ${genomeBuild} not found for rsID ${rsID}.`);
-            }
-
             const chromosome = assembly.seq_id;
             const position = assembly.alleles[0].hgvs.lct.position;
 
@@ -128,7 +128,7 @@ export function generateWeibullIncidenceCurve(k, b, linearPredictors, maxAge) {
 
     const results = [];
 
-    for (let age = 0; age <= maxAge; age++) {
+    for (let age = 0; age < maxAge; age++) {
         const cdf1 = populationCdf(age);
         const cdf2 = populationCdf(age + 1);
         const inc = cdf2 - cdf1; // Probability of event in [age, age+1)
@@ -341,10 +341,12 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
 }
 
 
-export async function getSnpsInfo(pgsId, build) {
-    //const loadPgsModel = await loadScore(pgsId, build);
-    const loadPgsModel = await fetch('../data/pgs_model_test.txt');
-    const parsedPgsModel = parseFile(await loadPgsModel.text());
+export async function getSnpsInfo(pgsId) {
+    const pgsModel = await loadScore(pgsId);
+
+    // Test
+    //const loadPgsModel = await fetch('../data/pgs_model_test.txt');
+    const parsedPgsModel = parseFile(pgsModel);
 
     return await processSnpData(parsedPgsModel);
 }

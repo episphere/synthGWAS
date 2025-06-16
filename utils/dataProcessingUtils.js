@@ -1,4 +1,4 @@
-import { generateAlleleDosage, getRsIds, getSnpsInfo } from './geneticUtils.js';
+import { generateAlleleDosage } from '../syntheticDataGenerator.js';
 import { GENDER } from '../constants.js';
 
 

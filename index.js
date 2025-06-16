@@ -6,4 +6,6 @@ export * from './utils/generalUtils.js';
 export * from './utils/fileParser.js';
 export * from './utils/mathUtils.js';
 export * from './utils/loadersUtils.js';
+export * from './utils/uiUtils.js';
+export * from './utils/nelderMead.js'
 export * from './worker/workerController.js';

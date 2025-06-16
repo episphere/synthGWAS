@@ -1,15 +1,11 @@
 import {
     processProfiles,
     processSnpData,
-    getRsIds,
     getChromosomeAndPosition,
     generateAlleleDosage,
     estimateWeibullParameters,
     getSnpsInfo,
-    renderHistogram,
-    displaySNP,
     createTable,
-    renderSNPHistograms,
     sleep,
     countOccurrences,
     parseFile,
@@ -37,21 +33,19 @@ import {
     generateKaplanMeierData,
     getCohort,
     downloadVcfFromChunks,
-    displayResultsHTML
+    toggleResultsVisibility,
+    loadScore,
+    nelderMead,
 } from './index.js';
 
 export {
     processProfiles,
     processSnpData,
-    getRsIds,
     getChromosomeAndPosition,
     generateAlleleDosage,
     estimateWeibullParameters,
     getSnpsInfo,
-    renderHistogram,
-    displaySNP,
     createTable,
-    renderSNPHistograms,
     sleep,
     countOccurrences,
     parseFile,
@@ -79,5 +73,7 @@ export {
     generateKaplanMeierData,
     getCohort,
     downloadVcfFromChunks,
-    displayResultsHTML
+    toggleResultsVisibility,
+    loadScore,
+    nelderMead,
 };

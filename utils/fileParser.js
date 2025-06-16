@@ -29,7 +29,8 @@ export async function parseCsv(filePath, options) {
 
     if (options.nLines !== undefined) {
         data = data.slice(1, options.nLines + 1);
-    } else {
+    }
+    else {
         data = data.slice(1);
     }
 

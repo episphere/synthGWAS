@@ -70,12 +70,33 @@ export async function loadCountries() {
         countrySelect.appendChild(placeholder);
 
         // Filter out aggregates and sort alphabetically
-        const realCountries = countries
+        // TODO: Currently only EUA is allowed
+        let realCountries = countries
             .filter(c => c.region && c.region.value !== 'Aggregates')
             .sort((a, b) => a.name.localeCompare(b.name));
 
+        const europeanAncestryCountries = [
+            // Europe
+            'Albania', 'Andorra', 'Armenia', 'Austria', 'Belarus', 'Belgium', 'Bosnia and Herzegovina',
+            'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Denmark', 'Estonia', 'Finland', 'France',
+            'Germany', 'Greece', 'Hungary', 'Iceland', 'Ireland', 'Italy', 'Kosovo', 'Latvia', 'Liechtenstein',
+            'Lithuania', 'Luxembourg', 'Malta', 'Moldova', 'Monaco', 'Montenegro', 'Netherlands',
+            'North Macedonia', 'Norway', 'Poland', 'Portugal', 'Romania', 'Russia', 'San Marino', 'Serbia',
+            'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'Ukraine', 'United Kingdom', 'Vatican City',
+
+            // Americas
+            'United States', 'Canada', 'Argentina', 'Chile', 'Uruguay',
+
+            // Oceania
+            'Australia', 'New Zealand'
+        ];
+
+        const filteredCountries = realCountries.filter(country =>
+            europeanAncestryCountries.includes(country.name)
+        );
+
         // Populate select options
-        realCountries.forEach(country => {
+        filteredCountries.forEach(country => {
             const option = document.createElement('option');
             option.value = country.id;  // ISO 3 code
             option.textContent = country.name;

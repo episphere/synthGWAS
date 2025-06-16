@@ -1,4 +1,4 @@
-import { dot, norm2, weightedSum } from './mathUtils.js';
+import { weightedSum } from './mathUtils.js';
 
 /** minimizes a function using the downhill simplex method */
 export function nelderMead(f, x0, parameters) {
@@ -147,8 +147,6 @@ export function nelderMead(f, x0, parameters) {
         else {
             updateSimplex(reflected);
         }
-
-        console.log('Simplex: ', simplex[0]);
     }
 
     simplex.sort(sortOrder);

@@ -30,7 +30,7 @@
     <div id="progressBarContainer">
         <div id="progressBar"></div>
     </div>
-    <div id="loadingText">Generating data... Please wait</div>
+    <div id="loadingText"></div>
 </div>
 
 <!-- Shared Parameters -->
@@ -44,17 +44,23 @@
     </div>
 
     <div class="input-group">
-        <div class="alert hidden" id="alert-age">Please enter a valid age</div>
         <label for="genderSelect">Gender:</label>
         <select id="genderSelect" class="gender-select">
             <option value="" disabled selected hidden>Loading Genders...</option>
         </select>
     </div>
 
+    <!--    <div class="input-group">-->
+    <!--        <div class="alert hidden" id="alert-pgs">Please enter a valid PGS ID (e.g., PGS000123 or 123).</div>-->
+    <!--        <label for="pgsId">PGS ID:</label>-->
+    <!--        <input type="text" id="pgsId" placeholder="PGS000004" value="PGS000004">-->
+    <!--    </div>-->
+
     <div class="input-group">
-        <div class="alert hidden" id="alert-pgs">Please enter a valid PGS ID (e.g., PGS000123 or 123).</div>
-        <label for="pgsId">PGS ID:</label>
-        <input type="text" id="pgsId" placeholder="PGS000004" value="PGS000004">
+        <label for="pgsId">Disease:</label>
+        <select id="pgsId" class="pgs-select">
+            <option value="" disabled selected hidden>Loading PGS IDs...</option>
+        </select>
     </div>
 
     <div class="input-group">
@@ -246,15 +252,15 @@
             </div>
 
             <div class="footer">
-                    <button id="downloadProspective" class="button download-button">
-                        <i class="fas fa-download"></i> Export All Profiles As CSV
-                    </button>
-                    <button id="downloadProspectiveVCF" class="button download-button">
-                        <i class="fas fa-download"></i> Export All Profiles As VCF
-                    </button>
-                    <button id="reset" class="button download-button">
-                        <i class="fas fa-file-code"></i> New Cohort Simulation
-                    </button>
+                <button id="downloadProspective" class="button download-button">
+                    <i class="fas fa-download"></i> Export All Profiles As CSV
+                </button>
+                <button id="downloadProspectiveVCF" class="button download-button">
+                    <i class="fas fa-download"></i> Export All Profiles As VCF
+                </button>
+                <button id="reset" class="button download-button">
+                    <i class="fas fa-file-code"></i> New Cohort Simulation
+                </button>
             </div>
         </div>
     </section>
