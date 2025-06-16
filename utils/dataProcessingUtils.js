@@ -1,9 +1,6 @@
 import { generateAlleleDosage, getRsIds, getSnpsInfo } from './geneticUtils.js';
 import { GENDER } from '../constants.js';
 
-// TODO: TESTING PURPOSES
-import { testData } from '../test.js';
-
 
 export function processPRS(snpsInfo) {
     // Validate SNP data
