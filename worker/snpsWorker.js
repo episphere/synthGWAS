@@ -19,8 +19,9 @@ self.onmessage = async (e) => {
         const observedIncidenceRate = await parseCsv(incidenceRateFile, { delimiter: ',' });
         const trainingLP = processPRS(snpsInfo);
         const [k, b] = estimateWeibullParameters(empiricalCdf(observedIncidenceRate), trainingLP);
-        const predictedIncidenceRate = generateWeibullIncidenceCurve(k, Math.exp(b), trainingLP, observedIncidenceRate.length);
-
+        const exp_b = Math.exp(b);
+        //const [k, b] = [3.6751234798345402, 2.256356405011471e-8]
+        const predictedIncidenceRate = generateWeibullIncidenceCurve(k, exp_b, trainingLP, observedIncidenceRate.length);
 
         await localforage.setItem('header', header);
 
@@ -31,7 +32,7 @@ self.onmessage = async (e) => {
             observedIncidenceRate,
             predictedIncidenceRate,
             k: k,
-            b: b
+            b: exp_b
         });
     } catch (error) {
         self.postMessage({ type: 'error', error: error.message });

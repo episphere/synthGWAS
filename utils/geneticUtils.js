@@ -140,8 +140,8 @@ export function generateWeibullIncidenceCurve(k, b, linearPredictors, maxAge) {
 }
 
 
+/* global localforage */
 export async function generateKaplanMeierData(cohort) {
-    /* global localforage */
     if (!cohort) {
         throw new Error('Invalid cohort input');
     }
@@ -175,7 +175,7 @@ export async function generateKaplanMeierData(cohort) {
 
         // The event occurs if time_of_onset <= study_exit_age
         // timeSinceEntryOfEvent = onsetAge - entryAge
-        const eventTimeSinceEntry = onsetAge - entryAge;
+        const eventTimeSinceEntry = onsetAge - entryAge < 0 ? Infinity : onsetAge - entryAge;
         const censorTime = followup;  // = exitAge - entryAge
 
         // Observed time is min(eventTimeSinceEntry, censorTime)
@@ -335,7 +335,8 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
         psi: -0.6,
         sigma: 0.6
     });
-    console.log('Fitted parameters (k, b):', params.x[0], Math.exp(params.x[1]), params.fx);
+    console.log('Fitted parameters (k, b):', params.x[0], Math.exp(params.x[1]));
+    console.log('Error: ', params.fx)
 
     return params.x;
 }
