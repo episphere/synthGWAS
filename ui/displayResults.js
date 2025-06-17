@@ -51,7 +51,7 @@ async function processCohortAndRenderKaplanMeier() {
         cohort.splice(0, cohort.length);
 
     } catch (error) {
-        console.error('Failed to render chart:', error);
+        console.error('Failed to render chart: ', error);
         throw error;
     }
 }
@@ -80,7 +80,7 @@ async function loadCohortProfiles(maxProfiles) {
 
         return cohort;
     } catch (error) {
-        console.error(`Failed to load cohort profiles: ${error.message}`);
+        console.error('Failed to load cohort profiles: ', error);
         throw error;
     }
 }
@@ -357,76 +357,9 @@ export async function renderIncidenceChart(observedIncidenceRate, predictedIncid
         new Chart(ctx, config);
     }
     catch (error) {
-        console.error("Failed to create chart:", error);
+        console.error("Failed to create chart: ", error);
         ctx.canvas.parentElement.innerHTML = '<p class="chart-error">Chart could not be displayed</p>';
 
         throw error;
     }
-}
-
-
-export function createTable(header, data, tableId = 'groupedTable', useDividers = true) {
-    if (!header || !data || !data.length) {
-        throw new Error('Missing or invalid input');
-    }
-
-    const tableContainer = document.getElementById(tableId) || document.createElement('div');
-
-    tableContainer.id = tableId;
-    tableContainer.innerHTML = '';
-    document.body.appendChild(tableContainer);
-
-    const table = document.createElement('table');
-
-    table.style.borderCollapse = 'collapse';
-    table.style.width = '100%';
-    table.style.margin = '20px 0';
-
-    // Create header row
-    const headerRow = document.createElement('tr');
-
-    header.forEach(headerText => {
-        const th = document.createElement('th');
-        th.textContent = headerText;
-        th.style.border = '1px solid #222';
-        th.style.padding = '12px';
-        th.style.backgroundColor = '#f8f9fa';
-        th.style.fontWeight = '600';
-        headerRow.appendChild(th);
-    });
-    table.appendChild(headerRow);
-
-    // Create data rows
-    data.forEach((row, rowIndex) => {
-        const tr = document.createElement('tr');
-
-        row.forEach((cellValue, cellIndex) => {
-            const td = document.createElement('td');
-            const headerName = header[cellIndex];
-            let formattedValue = cellValue;
-
-            // Format based on header name and data type
-            if (typeof cellValue === 'number') {
-                if (headerName.toLowerCase().includes('prs')) {
-                    formattedValue = cellValue.toFixed(4);
-                }
-                else {
-                    formattedValue = Number.isInteger(cellValue)
-                        ? cellValue
-                        : parseInt(cellValue, 10);
-                }
-            }
-            else if (Array.isArray(cellValue)) {
-                formattedValue = cellValue.join(', ');
-            }
-
-            td.textContent = formattedValue;
-            td.style.border = '1px solid #ddd';
-            td.style.padding = '10px';
-            td.style.textAlign = 'center';
-            tr.appendChild(td);
-        });
-
-        table.appendChild(tr);
-    });
 }

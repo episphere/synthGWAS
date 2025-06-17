@@ -68,12 +68,19 @@ async function handleDataGeneration(params) {
     if (hasError) return;
 
     if (!loadingScreen.style) {
-        console.error('Error: HTML element not found');
+        console.error('HTML element not found');
     }
 
     /* global localforage */
     loadingScreen.style.display = 'flex';
-    document.getElementById('loadingText').textContent = 'Modeling Hazard Rates...';
+
+    const loadingText = document.getElementById('loadingText');
+
+    if (!loadingText) {
+        console.error('HTML element not found');
+    }
+
+    loadingText.textContent = 'Modeling Hazard Rates...';
     updateLoadingProgress(0);
 
     let snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b;
@@ -87,14 +94,20 @@ async function handleDataGeneration(params) {
             pgsModelFile
         ));
     } catch (error) {
-        console.error(error.message);
-        alert('Failed to load SNPs info: ' + error.message);
+        console.error('Failed to load SNPs info: ', error);
         loadingScreen.style.display = 'none';
-        return;
+        alert('Error loading SNPs information, please reload the page and try again');
+
+        throw error;
+    }
+
+    const populationData = await localforage.getItem('populationData');
+
+    if (!populationData) {
+        throw new Error('Could not find population data');
     }
 
     try {
-        const populationData = await localforage.getItem('populationData');
         setTimeout(() => {
             document.getElementById('loadingText').textContent = 'Generating Synthetic Cohort...';
         }, 50);
@@ -121,112 +134,136 @@ async function handleDataGeneration(params) {
 
         return { observedIncidenceRate, predictedIncidenceRate };
     } catch (error) {
-        console.error(error.message);
-        alert('Error during profile generation: ' + error.message);
+        console.error('Error during profile generation: ', error.message);
+        alert('Error during profile generation, please reload the page and try again');
         loadingScreen.style.display = 'none';
+
+        throw error;
     }
 }
 
 
 export function initializeUI(config) {
-    const {
-        incidenceRateFile,
-        globalIncidenceFile,
-        pgsModelFile,
-        parseCsv,
-        dataToVCF
-    } = config;
+    setupButtons();
+    setupInput();
+    setupCohortGeneration();
+}
 
+
+function setupButtons() {
     // Download profiles
     /* global localforage, pako */
-    document.getElementById('downloadProspective')?.addEventListener('click', async () => {
-        await downloadCohortFromChunks({
-            prefix: 'task_',
-            filename: 'all_profiles.csv',
-            splitDataset: false
+    try {
+        document.getElementById('downloadProspective')?.addEventListener('click', async () => {
+            await downloadCohortFromChunks({
+                prefix: 'task_',
+                filename: 'all_profiles.csv',
+                splitDataset: false
+            });
         });
-    });
 
-    document.getElementById('downloadRetrospective')?.addEventListener('click', async () => {
-        await downloadCohortFromChunks({
-            prefix: 'task_',
-            filename: 'case_controls.csv',
-            splitDataset: true
+        document.getElementById('downloadRetrospective')?.addEventListener('click', async () => {
+            await downloadCohortFromChunks({
+                prefix: 'task_',
+                filename: 'case_controls.csv',
+                splitDataset: true
+            });
         });
-    });
 
-    // Download VCF
-    document.getElementById('downloadProspectiveVCF').addEventListener('click', async () => {
-        const header = await localforage.getItem('header');
+        // Download VCF
+        document.getElementById('downloadProspectiveVCF')?.addEventListener('click', async () => {
+            const header = await localforage.getItem('header');
 
-        await downloadVcfFromChunks({
-            header: header,
-            prefix: 'task_',
-            filename: 'profiles.vcf'
+            await downloadVcfFromChunks({
+                header: header,
+                prefix: 'task_',
+                filename: 'profiles.vcf'
+            });
         });
-    });
 
 
-    document.getElementById('reset').addEventListener('click', async () => {
-        await toggleResultsVisibility();
-    });
+        document.getElementById('reset')?.addEventListener('click', async () => {
+            await toggleResultsVisibility();
+        });
+    }
+    catch (error) {
+        console.error('Error setting buttons: ', error);
+        throw error;
+    }
+}
 
 
-    document.getElementById('countrySelect').addEventListener('change', async (e) => {
-        const countryISO = e.target.value;
+/* global localforage */
+function setupInput() {
+    try {
+        document.getElementById('countrySelect').addEventListener('change', async (e) => {
+            const countryISO = e.target.value;
 
-        if (countryISO) {
-            const ageData = await loadPopulation(countryISO);
-            await localforage.setItem('populationData', ageData);
-        }
-    });
+            if (countryISO) {
+                const ageData = await loadPopulation(countryISO);
+                await localforage.setItem('populationData', ageData);
+            }
+        });
 
-    // TODO: Currently only the Female gender is allowed
-    // <option value="${GENDER.BOTH}" selected>Both</option>
-    //         <option value="${GENDER.MALE}">Male</option>
-    document.getElementById('genderSelect').innerHTML = `
+        // TODO: Currently only the Female gender is allowed
+        // <option value="${GENDER.BOTH}" selected>Both</option>
+        //         <option value="${GENDER.MALE}">Male</option>
+        document.getElementById('genderSelect').innerHTML = `
         <option value="${GENDER.FEMALE}">Female</option>
     `;
 
-    document.getElementById('pgsId').innerHTML = `
+        document.getElementById('pgsId').innerHTML = `
         <option value="${'PGS000004'}">Breast Cancer (PGS000004)</option>
     `;
+    }
+    catch (error) {
+        console.error('Error setting input parameters: ', error);
+        throw error;
+    }
+}
 
-    document.getElementById('prospectiveGenerate').addEventListener('click', async () => {
-        const params = {
-            isRetrospective: false,
-            countryISO: document.getElementById('countrySelect').value.trim(),
-            gender: document.getElementById('genderSelect').value.trim(),
-            pgsIdInput: document.getElementById('pgsId').value.trim(),
-            numberOfProfiles: document.getElementById('numberOfProfiles').value.trim(),
-            minAge: document.getElementById('minAge').value.trim(),
-            maxAge: document.getElementById('maxAge').value.trim(),
-            minFollowUp: document.getElementById('minFollowUp').value.trim(),
-            maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
-            loadingScreen: document.getElementById('loadingScreen')
-        };
 
-        const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
+function setupCohortGeneration() {
+    try {
+        document.getElementById('prospectiveGenerate').addEventListener('click', async () => {
+            const params = {
+                isRetrospective: false,
+                countryISO: document.getElementById('countrySelect').value.trim(),
+                gender: document.getElementById('genderSelect').value.trim(),
+                pgsIdInput: document.getElementById('pgsId').value.trim(),
+                numberOfProfiles: document.getElementById('numberOfProfiles').value.trim(),
+                minAge: document.getElementById('minAge').value.trim(),
+                maxAge: document.getElementById('maxAge').value.trim(),
+                minFollowUp: document.getElementById('minFollowUp').value.trim(),
+                maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
+                loadingScreen: document.getElementById('loadingScreen')
+            };
 
-        await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
-    });
+            const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
 
-    document.getElementById('retrospectiveGenerate').addEventListener('click', async () => {
-        const params = {
-            isRetrospective: true,
-            countryISO: document.getElementById('countrySelect').value.trim(),
-            gender: document.getElementById('genderSelect').value.trim(),
-            pgsIdInput: document.getElementById('pgsId').value.trim(),
-            numberOfProfiles: document.getElementById('numberOfCases').value.trim(),
-            minAge: document.getElementById('minAge').value.trim(),
-            maxAge: document.getElementById('maxAge').value.trim(),
-            minFollowUp: document.getElementById('minFollowUp').value.trim(),
-            maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
-            controlsPerCase: document.getElementById('controlsPerCase').value.trim(),
-            loadingScreen: document.getElementById('loadingScreen')
-        };
-        const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
+            await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
+        });
 
-        await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
-    });
+        document.getElementById('retrospectiveGenerate').addEventListener('click', async () => {
+            const params = {
+                isRetrospective: true,
+                countryISO: document.getElementById('countrySelect').value.trim(),
+                gender: document.getElementById('genderSelect').value.trim(),
+                pgsIdInput: document.getElementById('pgsId').value.trim(),
+                numberOfProfiles: document.getElementById('numberOfCases').value.trim(),
+                minAge: document.getElementById('minAge').value.trim(),
+                maxAge: document.getElementById('maxAge').value.trim(),
+                minFollowUp: document.getElementById('minFollowUp').value.trim(),
+                maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
+                controlsPerCase: document.getElementById('controlsPerCase').value.trim(),
+                loadingScreen: document.getElementById('loadingScreen')
+            };
+            const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
+
+            await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
+        });
+    }
+    catch (error) {
+        console.error('Error generating cohort: ', error);
+    }
 }

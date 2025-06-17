@@ -64,7 +64,7 @@ function setupNavigationLinks() {
         });
     }
     catch (error) {
-        console.error('Navigation links setup failed', error);
+        console.error('Navigation links setup failed: ', error);
         throw error;
     }
 

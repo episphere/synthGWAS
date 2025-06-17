@@ -5,10 +5,15 @@ export function displaySNP(snp) {
 
 
 export function updateLoadingProgress(percentage) {
-    const bar = document.getElementById('progressBar');
+    try{
+        const bar = document.getElementById('progressBar');
 
-    if (bar) {
-        bar.style.width = `${percentage}%`;
+        if (bar) {
+            bar.style.width = `${percentage}%`;
+        }
+    }
+    catch (error) {
+        console.error('HTML element not found: ', error);
     }
 }
 
