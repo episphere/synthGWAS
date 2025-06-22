@@ -4,9 +4,11 @@ import {
     handleSnpsInfo,
     downloadVcfFromChunks,
     downloadCohortFromChunks,
-    loadPopulation, showAlert, hideAlert, displayResults, toggleResultsVisibility, updateLoadingProgress
+    loadPopulation, showAlert, hideAlert, displayResults, toggleResultsVisibility, updateLoadingProgress,
+    setView, getHomePage
 } from '../syntheticDataGenerator.js';
 import { GENDER, DEFAULT_CHUNK_SIZE } from '../constants.js';
+
 
 
 async function handleDataGeneration(params) {
@@ -144,9 +146,61 @@ async function handleDataGeneration(params) {
 
 
 export function initializeUI(config) {
+    setupSlideshow();
     setupButtons();
     setupInput();
     setupCohortGeneration();
+}
+
+
+export function setupSlideshow() {
+    let slideIndex = 1;
+
+    function showSlides(n) {
+        const slides = document.getElementsByClassName("mySlides");
+        const dots = document.getElementsByClassName("dot");
+
+        if (slides.length === 0) return;
+
+        if (n > slides.length) slideIndex = 1;
+        if (n < 1) slideIndex = slides.length;
+
+        for (let i = 0; i < slides.length; i++) {
+            slides[i].style.display = "none";
+        }
+
+        for (let i = 0; i < dots.length; i++) {
+            dots[i].classList.remove("active");
+        }
+
+        slides[slideIndex - 1].style.display = "block";
+        if (dots[slideIndex - 1]) {
+            dots[slideIndex - 1].classList.add("active");
+        }
+    }
+
+    function plusSlides(n) {
+        showSlides(slideIndex += n);
+    }
+
+    function currentSlide(n) {
+        showSlides(slideIndex = n);
+    }
+
+    // Attach event listeners
+    const prevBtn = document.getElementById("prevSlide");
+    const nextBtn = document.getElementById("nextSlide");
+
+    if (prevBtn) prevBtn.addEventListener("click", () => plusSlides(-1));
+    if (nextBtn) nextBtn.addEventListener("click", () => plusSlides(1));
+
+    const dots = document.querySelectorAll(".dot");
+    dots.forEach((dot, index) => {
+        dot.addEventListener("click", () => currentSlide(index + 1));
+    });
+
+    // Initialize slideshow
+    showSlides(slideIndex);
 }
 
 
@@ -181,9 +235,9 @@ function setupButtons() {
             });
         });
 
-
-        document.getElementById('reset')?.addEventListener('click', async () => {
+        document.getElementById('reset').addEventListener('click', async() => {
             await toggleResultsVisibility();
+            setView(getHomePage());
         });
     }
     catch (error) {
@@ -224,46 +278,94 @@ function setupInput() {
 
 
 function setupCohortGeneration() {
-    try {
-        document.getElementById('prospectiveGenerate').addEventListener('click', async () => {
-            const params = {
-                isRetrospective: false,
-                countryISO: document.getElementById('countrySelect').value.trim(),
-                gender: document.getElementById('genderSelect').value.trim(),
-                pgsIdInput: document.getElementById('pgsId').value.trim(),
-                numberOfProfiles: document.getElementById('numberOfProfiles').value.trim(),
-                minAge: document.getElementById('minAge').value.trim(),
-                maxAge: document.getElementById('maxAge').value.trim(),
-                minFollowUp: document.getElementById('minFollowUp').value.trim(),
-                maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
-                loadingScreen: document.getElementById('loadingScreen')
-            };
+    const prospectiveBtn = document.getElementById('prospectiveGenerate');
+    const retrospectiveBtn = document.getElementById('retrospectiveGenerate');
 
-            const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
+    prospectiveBtn.addEventListener('click', async () => {
+        const params = getParams(false);
+        if (!validateParams(params)) return;
+        await generateAndDisplay(params);
+    });
 
-            await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
-        });
+    retrospectiveBtn.addEventListener('click', async () => {
+        const params = getParams(true);
+        if (!validateParams(params)) return;
+        await generateAndDisplay(params);
+    });
+}
 
-        document.getElementById('retrospectiveGenerate').addEventListener('click', async () => {
-            const params = {
-                isRetrospective: true,
-                countryISO: document.getElementById('countrySelect').value.trim(),
-                gender: document.getElementById('genderSelect').value.trim(),
-                pgsIdInput: document.getElementById('pgsId').value.trim(),
-                numberOfProfiles: document.getElementById('numberOfCases').value.trim(),
-                minAge: document.getElementById('minAge').value.trim(),
-                maxAge: document.getElementById('maxAge').value.trim(),
-                minFollowUp: document.getElementById('minFollowUp').value.trim(),
-                maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
-                controlsPerCase: document.getElementById('controlsPerCase').value.trim(),
-                loadingScreen: document.getElementById('loadingScreen')
-            };
-            const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
 
-            await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
-        });
+function getParams(isRetrospective) {
+    return {
+        isRetrospective,
+        countryISO: document.getElementById('countrySelect').value.trim(),
+        gender: document.getElementById('genderSelect').value.trim(),
+        pgsIdInput: document.getElementById('pgsId').value.trim(),
+        numberOfProfiles: document.getElementById('numberOfProfiles').value.trim(),
+        minAge: document.getElementById('minAge').value.trim(),
+        maxAge: document.getElementById('maxAge').value.trim(),
+        minFollowUp: document.getElementById('minFollowUp').value.trim(),
+        maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
+        controlsPerCase: document.getElementById('controlsPerCase').value.trim(),
+        loadingScreen: document.getElementById('loadingScreen'),
+    };
+}
+
+
+function validateParams(params) {
+    let hasError = false;
+
+    hideAlert('country');
+    hideAlert('pgs');
+    hideAlert('profiles');
+    hideAlert('cases');
+    hideAlert('age-range');
+    hideAlert('age-follow');
+    hideAlert('controls');
+
+    if (!params.countryISO) {
+        showAlert('country');
+        hasError = true;
     }
-    catch (error) {
-        console.error('Error generating cohort: ', error);
+
+    if (!/^(PGS\d{6}|\d{1,6})$/.test(params.pgsIdInput)) {
+        showAlert('pgs');
+        hasError = true;
+    }
+
+    if (!params.numberOfProfiles || isNaN(params.numberOfProfiles) || Number(params.numberOfProfiles) <= 0) {
+        if (params.isRetrospective) showAlert('cases');
+        else showAlert('profiles');
+        hasError = true;
+    }
+
+    if (!params.minAge || isNaN(params.minAge) || !params.maxAge || isNaN(params.maxAge) ||
+        Number(params.minAge) < 0 || Number(params.maxAge) < Number(params.minAge)) {
+        showAlert('age-range');
+        hasError = true;
+    }
+
+    if (!params.minFollowUp || isNaN(params.minFollowUp) || !params.maxFollowUp || isNaN(params.maxFollowUp) ||
+        Number(params.minFollowUp) < 0 || Number(params.maxFollowUp) < Number(params.minFollowUp)) {
+        showAlert('age-follow');
+        hasError = true;
+    }
+
+    if (!params.controlsPerCase || isNaN(params.controlsPerCase)) {
+        showAlert('controls');
+        hasError = true;
+    }
+
+    return !hasError;
+}
+
+
+async function generateAndDisplay(params) {
+    try {
+        const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
+        await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
+    } catch (error) {
+        console.error('Error generating cohort:', error);
+        alert('Failed to generate cohort. Please check your input or try again.');
     }
 }

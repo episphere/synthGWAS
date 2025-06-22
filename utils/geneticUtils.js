@@ -343,13 +343,14 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
 
 
 export async function getSnpsInfo(pgsId) {
-    const pgsModel = await loadScore(pgsId);
+    //const pgsModel = await loadScore(pgsId);
+    //const parsedPgsModel = parseFile(pgsModel);
 
     // Test
-    //const loadPgsModel = await fetch('../data/pgs_model_test.txt');
-    const parsedPgsModel = parseFile(pgsModel);
+    const response = await fetch('../data/pgs_model_test.txt');
+    const text = await response.text();
 
-    return await processSnpData(parsedPgsModel);
+    return await processSnpData(parseFile(text));
 }
 
 

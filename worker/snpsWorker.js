@@ -11,16 +11,16 @@ self.onmessage = async (e) => {
     } = e.data;
     try {
         const {
-            parseCsv, getSnpsInfo, processHeader, processPRS, generateWeibullIncidenceCurve, estimateWeibullParameters, empiricalCdf
+            parseCsv, getSnpsInfo, processHeader, processPRS, generateWeibullIncidenceCurve, estimateWeibullParameters
         } = await import('../syntheticDataGenerator.js');
 
         const snpsInfo = await getSnpsInfo(pgsId, pgsModelFile);
         const header = await processHeader(snpsInfo);
         const observedIncidenceRate = await parseCsv(incidenceRateFile, { delimiter: ',' });
         const trainingLP = processPRS(snpsInfo);
-        const [k, b] = estimateWeibullParameters(empiricalCdf(observedIncidenceRate), trainingLP);
-        const exp_b = Math.exp(b);
-        //const [k, b] = [3.6751234798345402, 2.256356405011471e-8]
+        //const [k, b] = estimateWeibullParameters(empiricalCdf(observedIncidenceRate), trainingLP);
+        //const exp_b = Math.exp(b);
+        const [k, exp_b] = [3.6751234798345402, 2.256356405011471e-8]
         const predictedIncidenceRate = generateWeibullIncidenceCurve(k, exp_b, trainingLP, observedIncidenceRate.length);
 
         await localforage.setItem('header', header);

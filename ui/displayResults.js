@@ -102,33 +102,33 @@ function renderKaplanMeierChart(kmCurveData) {
         throw new Error('HTML not found');
     }
 
-    const currentChart = document.getElementById('#kaplanMeierCurve svg');
+    const currentChart = document.querySelector('#kaplanMeierCurve svg');
 
     if (currentChart) {
-        currentChart.destroy();
+        currentChart.remove();  // or clear the parent div, which you already do
     }
 
-    const container = htmlElement.node();
+    const container = d3.select('#expectedIncidenceChartProspective').node();
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
     // Calculate responsive margins (percentage-based)
     const margin = {
-        top: Math.min(70, containerHeight * 0.1),    // 10% or 70px max
+        top: Math.min(100, containerHeight * 0.2),    // 10% or 70px max
         right: Math.min(300, containerWidth * 0.1),  // 20% or 280px max
-        bottom: Math.min(80, containerHeight * 0.1), // 10% or 80px max
+        bottom: Math.min(110, containerHeight * 0.2), // 10% or 80px max
         left: Math.min(70, containerWidth * 0.1)     // 10% or 60px max
     };
-
+    console.log(margin)
     const width = containerWidth - margin.left - margin.right;
     const height = containerHeight - margin.top - margin.bottom;
+    console.log(width, height);
+    console.log(width + margin.left + margin.right,height + margin.top + margin.bottom);
 
     // Clear previous chart
     htmlElement.html('');
-
     const svg = htmlElement
-        .append('svg')
-        .attr('viewBox', `0 0 ${containerWidth} ${containerHeight}`)
+        .append('svg').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .style('font-family', 'sans-serif')
         .append('g')
@@ -139,9 +139,10 @@ function renderKaplanMeierChart(kmCurveData) {
     const x = d3.scaleLinear()
         .domain(d3.extent(kmCurveData, d => d.time))
         .range([0, width]);
-
+    const yMin = d3.min(kmCurveData, d => d.lower);
+    const yMax = d3.max(kmCurveData, d => d.upper);
     const y = d3.scaleLinear()
-        .domain([0, 1])
+        .domain([Math.max(0, yMin - 0.05), Math.min(1, yMax + 0.05)])  // small padding
         .range([height, 0]);
 
     // Axes

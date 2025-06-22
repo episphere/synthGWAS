@@ -41,6 +41,7 @@ export async function loadScore(entry = 'PGS000004', build = 38) {
 
     try {
         const response = await httpRequest(url);
+        console.log(response);
         const arrayBuffer = await response.arrayBuffer();
 
         return pako.inflate(arrayBuffer, { to: 'string' });
@@ -59,6 +60,7 @@ export async function loadCountries() {
         const data = await response.json();
         const countries = data[1];
 
+        // TODO: There is only 1 country in v1.0
         countrySelect.innerHTML = '';
 
         const placeholder = document.createElement('option');
@@ -76,19 +78,7 @@ export async function loadCountries() {
             .sort((a, b) => a.name.localeCompare(b.name));
 
         const europeanAncestryCountries = [
-            // Europe
-            'Albania', 'Andorra', 'Armenia', 'Austria', 'Belarus', 'Belgium', 'Bosnia and Herzegovina',
-            'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Denmark', 'Estonia', 'Finland', 'France',
-            'Germany', 'Greece', 'Hungary', 'Iceland', 'Ireland', 'Italy', 'Kosovo', 'Latvia', 'Liechtenstein',
-            'Lithuania', 'Luxembourg', 'Malta', 'Moldova', 'Monaco', 'Montenegro', 'Netherlands',
-            'North Macedonia', 'Norway', 'Poland', 'Portugal', 'Romania', 'Russia', 'San Marino', 'Serbia',
-            'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'Ukraine', 'United Kingdom', 'Vatican City',
-
-            // Americas
-            'United States', 'Canada', 'Argentina', 'Chile', 'Uruguay',
-
-            // Oceania
-            'Australia', 'New Zealand'
+            'United States',
         ];
 
         const filteredCountries = realCountries.filter(country =>

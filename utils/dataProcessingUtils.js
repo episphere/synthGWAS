@@ -37,6 +37,7 @@ export function processPRS(snpsInfo) {
 export async function processSnpData(snpData) {
     // Validate and extract relevant indices from headers
     const { headers, values } = snpData;
+
     const indices = {
         chromosome: headers.indexOf('chr_name'),
         position: headers.indexOf('chr_position'),

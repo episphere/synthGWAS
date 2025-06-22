@@ -34,3 +34,8 @@ export function hideAlert(inputId) {
         alertDiv.classList.add('hidden');
     }
 }
+
+
+export function getHomePage() {
+    return window.location.hash.substring(1) || 'prospective';
+}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PGS Data Visualization</title>
+    <title>synthGWAS</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -14,7 +14,7 @@
     <nav class="main-nav">
         <div class="logo">
             <i class="fas fa-dna"></i>
-            <span>SynthGWAS</span>
+            <a href="#" data-page="prospective" class="logo-title">SynthGWAS</a>
         </div>
 
         <ul class="nav-links">
@@ -50,12 +50,6 @@
         </select>
     </div>
 
-    <!--    <div class="input-group">-->
-    <!--        <div class="alert hidden" id="alert-pgs">Please enter a valid PGS ID (e.g., PGS000123 or 123).</div>-->
-    <!--        <label for="pgsId">PGS ID:</label>-->
-    <!--        <input type="text" id="pgsId" placeholder="PGS000004" value="PGS000004">-->
-    <!--    </div>-->
-
     <div class="input-group">
         <label for="pgsId">Disease:</label>
         <select id="pgsId" class="pgs-select">
@@ -65,7 +59,7 @@
 
     <div class="input-group">
         <div class="alert hidden" id="alert-age-range">Please enter a valid age range.</div>
-        <label for="minAge">Age Range:</label>
+        <label for="minAge">Age of Entry Range (years):</label>
         <div class="age-range">
             <input type="number" id="minAge" placeholder="Min Age" value="30">
             <span>to</span>
@@ -75,7 +69,7 @@
 
     <div class="input-group">
         <div class="alert hidden" id="alert-age-follow">Please enter a valid follow-up range.</div>
-        <label for="minFollowUp">Follow-up (years):</label>
+        <label for="minFollowUp">Follow-Up Period (years):</label>
         <div class="followUp-range">
             <input type="number" id="minFollowUp" placeholder="Min Follow Up" value="15" min="1" max="50">
             <span>to</span>
@@ -89,7 +83,7 @@
     <!-- Tutorial Page -->
     <section id="tutorial" class="page">
         <article class="tutorial-content">
-            <h2>Getting Started Guide</h2>
+            <h2>Getting Started Guide <span class="version-tag">v1.0</span></h2>
 
             <div class="tutorial-step">
                 <h3>1. Select Cohort Type</h3>
@@ -99,16 +93,16 @@
             </div>
 
             <div class="tutorial-step">
-                <h3>2. Define Shared Parameters</h3>
+                <h3>2. Define Cohort Type Common Parameters</h3>
                 <p>Regardless of the chosen cohort type, you'll need to configure the following:</p>
                 <ul>
                     <li><strong>Country:</strong> Select the country whose age distribution will be used for generating
-                        study entry ages.
+                        study entry ages. Current version will only support USA.
                     </li>
-                    <li><strong>Gender:</strong> Choose the biological sex (Male, Female or Both) for the cohort.</li>
-                    <li><strong>PGS ID:</strong> Provide a Polygenic Score identifier from the
+                    <li><strong>Gender:</strong> Choose the biological sex (Male, Female or Both) for the cohort. Current version will only support Female</li>
+                    <li><strong>Disease:</strong> Provide a Polygenic Score identifier from the
                         <a href="https://www.pgscatalog.org/" target="_blank">PGS Catalog</a>, such as
-                        <code>PGS000004</code> or simply <code>4</code>.
+                        <code>PGS000004</code> or simply <code>4</code>. Current version will only support Breast Cancer (PGS000004).
                     </li>
                     <li><strong>Age of Entry Range:</strong> Define the lower and upper bounds for the entry age of each profile.
                     </li>
@@ -122,16 +116,22 @@
                 <h3>3. Cohort-Specific Settings</h3>
                 <p>Depending on the selected cohort type, specify the appropriate parameters:</p>
                 <ul>
-                    <li><strong>Prospective Cohort:</strong> Choose the number of profiles to be generated.</li>
-                    <li><strong>Retrospective Cohort:</strong> Specify the number of <strong>cases</strong> and how many
-                        <strong>controls per case</strong> should be matched.
+                    <li><strong>Prospective Cohort:</strong>
+                        <ul>
+                            <li><strong>Total Number of Profiles:</strong> Choose the number of profiles to be generated.</li>
+                        </ul>
+                    <li><strong>Retrospective Cohort:</strong>
+                        <ul>
+                            <li><strong>Total Number of Cases:</strong> Choose the number of cases to be generated.</li>
+                            <li><strong>Number of Controls per Case:</strong> Choose the number of controls to match to each case. Current version only allows integers.</li>
+                        </ul>
                     </li>
                 </ul>
             </div>
 
             <div class="tutorial-step">
                 <h3>4. Generate Data</h3>
-                <p>Click the <strong>Generate Data</strong> button to begin the data synthesis process. This may take a
+                <p>Click the <strong>Generate Data</strong> button to begin the synthetic data generation process. This may take a
                     few moments depending on the size of the dataset.</p>
             </div>
 
@@ -139,10 +139,13 @@
                 <h3>5. View Statistics and Download Results</h3>
                 <p>Once generation is complete, you can:</p>
                 <ul>
-                    <li>Inspect summary statistics such as the <strong>real-world incidence rate</strong> and the
-                        <strong>incidence rate estimated via Cox proportional hazard modeling</strong>.
+                    <li><strong>Inspect summary statistics</strong>:
+                        <ul>
+                            <li><strong>Observed vs Predicted Incidence Rate:</strong> Comparing the real-world data with the one estimated via Cox proportional hazard modeling </li>
+                            <li><strong>Kaplan-Meier Curve:</strong> A step-function plot used to estimate the survival function and visualize time-to-event data, showing the proportion of individuals remaining event-free over time.</li>
+                        </ul>
                     </li>
-                    <li>Download the output in your preferred format:</li>
+                    <li><strong>Download the output in your preferred format:</strong></li>
                     <ul>
                         <li><strong>Prospective Cohort:</strong> All generated profiles in CSV or VCF format.</li>
                         <li><strong>Retrospective Cohort:</strong> Matched case-control pairs in CSV or VCF format.</li>
@@ -238,18 +241,51 @@
     <!-- Results Section -->
     <section id="results" class="results hidden">
         <div id="prospectiveResults">
-            <div class="charts-scroll-container">
-                <div class="charts-carousel">
+<!--            <div class="charts-scroll-container">-->
+<!--                <button class="carousel-arrow left-arrow" id="prevSlide">&#8592;</button>-->
+
+<!--                <div id="carousel" class="charts-carousel">-->
+<!--                    <div class="chart-slide">-->
+<!--                        <h2>Observed vs. Predicted Incidence Rates</h2>-->
+<!--                        <canvas id="expectedIncidenceChartProspective"></canvas>-->
+<!--                    </div>-->
+<!--                    <div class="chart-slide">-->
+<!--                        <h2>Kaplan-Meier curve for simulated breast cancer prospective cohort</h2>-->
+<!--                        <div id="kaplanMeierCurve" class="kaplan-meier-container"></div>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--                <button class="carousel-arrow right-arrow" id="nextSlide">&#8594;</button>-->
+<!--            </div>-->
+
+
+
+
+                <!-- Slide 1 -->
+                <div class="mySlides fade">
                     <div class="chart-slide">
                         <h2>Observed vs. Predicted Incidence Rates</h2>
                         <canvas id="expectedIncidenceChartProspective"></canvas>
                     </div>
+                </div>
+
+                <!-- Slide 2 -->
+                <div class="mySlides fade">
                     <div class="chart-slide">
                         <h2>Kaplan-Meier curve for simulated breast cancer prospective cohort</h2>
                         <div id="kaplanMeierCurve" class="kaplan-meier-container"></div>
                     </div>
                 </div>
-            </div>
+                <div id="tooltip" style="position: absolute; opacity: 0; pointer-events: none; background: white; border: 1px solid #ccc; padding: 8px; border-radius: 4px; font-size: 14px;"></div>
+                <!-- Arrows -->
+                <a class="prev" id="prevSlide">&#10094;</a>
+                <a class="next" id="nextSlide">&#10095;</a>
+
+
+
+
+
+
 
             <div class="footer">
                 <button id="downloadProspective" class="button download-button">

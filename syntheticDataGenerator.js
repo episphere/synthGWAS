@@ -35,6 +35,8 @@ import {
     toggleResultsVisibility,
     loadScore,
     nelderMead,
+    setView,
+    getHomePage,
 } from './index.js';
 
 export {
@@ -74,4 +76,6 @@ export {
     toggleResultsVisibility,
     loadScore,
     nelderMead,
+    setView,
+    getHomePage
 };

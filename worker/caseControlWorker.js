@@ -17,7 +17,7 @@ self.onmessage = async (e) => {
         let chunkIndex = 0;
 
         while (generatedCases < numberOfCases) {
-            // STEP 1: Generate batch for the defined age group
+            console.log("GEN", generatedCases, numberOfCases);
             let batchProfiles = await processProfiles(
                 snpsInfo,
                 chunkSize,
@@ -30,15 +30,17 @@ self.onmessage = async (e) => {
                 b
             );
 
-            const casesPool = batchProfiles.filter(p => p[INDEX.CASE] === 1);
+            let casesPool = batchProfiles.filter(p => p[INDEX.CASE] === 1);
+            const remainingCases = numberOfCases - generatedCases;
+
+            casesPool = casesPool.slice(0, remainingCases);
+
             if (casesPool.length === 0) continue;
 
-            // STEP 2: Compute age of onset for each case
             const onsetAges = casesPool.map(p => p[INDEX.ONSET]);
             const minOnset = Math.min(...onsetAges);
             const maxOnset = Math.max(...onsetAges);
 
-            // STEP 3: Generate controls that could match those onset ages
             let controlProfiles = await processProfiles(
                 snpsInfo,
                 chunkSize * 2,
@@ -55,7 +57,6 @@ self.onmessage = async (e) => {
 
             if (controlsPool.length === 0) continue;
 
-            // STEP 4: Match cases to controls based on onset age proximity
             const { casesMatched, results } = matchCasesControls(casesPool, controlsPool, controlsPerCase);
 
             if (casesMatched === 0) continue;
