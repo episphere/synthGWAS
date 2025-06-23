@@ -5,12 +5,12 @@ import {
     downloadVcfFromChunks,
     downloadCohortFromChunks,
     loadPopulation, showAlert, hideAlert, displayResults, toggleResultsVisibility, updateLoadingProgress,
-    setView, getHomePage
+    setView, getHomePage, showLoading, showLoadingText, hideLoading
 } from '../syntheticDataGenerator.js';
 import { GENDER, DEFAULT_CHUNK_SIZE } from '../constants.js';
 
 
-
+/* global localforage */
 async function handleDataGeneration(params) {
     const {
         isRetrospective = false,
@@ -23,7 +23,6 @@ async function handleDataGeneration(params) {
         minFollowUp,
         maxFollowUp,
         controlsPerCase = 1,
-        loadingScreen
     } = params;
 
     let hasError = false;
@@ -69,20 +68,8 @@ async function handleDataGeneration(params) {
 
     if (hasError) return;
 
-    if (!loadingScreen.style) {
-        console.error('HTML element not found');
-    }
-
-    /* global localforage */
-    loadingScreen.style.display = 'flex';
-
-    const loadingText = document.getElementById('loadingText');
-
-    if (!loadingText) {
-        console.error('HTML element not found');
-    }
-
-    loadingText.textContent = 'Modeling Hazard Rates...';
+    showLoading('spinner');
+    showLoadingText('Modeling Hazard Rates...')
     updateLoadingProgress(0);
 
     let snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b;
@@ -97,7 +84,6 @@ async function handleDataGeneration(params) {
         ));
     } catch (error) {
         console.error('Failed to load SNPs info: ', error);
-        loadingScreen.style.display = 'none';
         alert('Error loading SNPs information, please reload the page and try again');
 
         throw error;
@@ -111,8 +97,9 @@ async function handleDataGeneration(params) {
 
     try {
         setTimeout(() => {
-            document.getElementById('loadingText').textContent = 'Generating Synthetic Cohort...';
-        }, 50);
+            showLoading('bar');
+            showLoadingText('Generating Synthetic Cohort...')
+        }, 10);
 
         let config = {
             totalProfiles: Number(numberOfProfiles),
@@ -127,19 +114,19 @@ async function handleDataGeneration(params) {
 
         if (isRetrospective) {
             config.chunkSize = DEFAULT_CHUNK_SIZE;
-            await handleCaseControlRetrieval(config, controlsPerCase, snpsInfo, k, b, incidenceRateFile, pgsModelFile, loadingScreen);
+            await handleCaseControlRetrieval(config, controlsPerCase, snpsInfo, k, b, incidenceRateFile, pgsModelFile);
         }
         else {
             config.chunkSize = Math.min(DEFAULT_CHUNK_SIZE, Number(numberOfProfiles));
-            await handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile, loadingScreen);
+            await handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile);
         }
+
+        hideLoading();
 
         return { observedIncidenceRate, predictedIncidenceRate };
     } catch (error) {
         console.error('Error during profile generation: ', error.message);
         alert('Error during profile generation, please reload the page and try again');
-        loadingScreen.style.display = 'none';
-
         throw error;
     }
 }
@@ -157,23 +144,23 @@ export function setupSlideshow() {
     let slideIndex = 1;
 
     function showSlides(n) {
-        const slides = document.getElementsByClassName("mySlides");
+        const charts = document.getElementsByClassName("charts");
         const dots = document.getElementsByClassName("dot");
 
-        if (slides.length === 0) return;
+        if (charts.length === 0) return;
 
-        if (n > slides.length) slideIndex = 1;
-        if (n < 1) slideIndex = slides.length;
+        if (n > charts.length) slideIndex = 1;
+        if (n < 1) slideIndex = charts.length;
 
-        for (let i = 0; i < slides.length; i++) {
-            slides[i].style.display = "none";
+        for (let i = 0; i < charts.length; i++) {
+            charts[i].style.display = "none";
         }
 
         for (let i = 0; i < dots.length; i++) {
             dots[i].classList.remove("active");
         }
 
-        slides[slideIndex - 1].style.display = "block";
+        charts[slideIndex - 1].style.display = "block";
         if (dots[slideIndex - 1]) {
             dots[slideIndex - 1].classList.add("active");
         }

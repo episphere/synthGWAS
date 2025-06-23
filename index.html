@@ -27,10 +27,13 @@
 
 <!-- Loading Screen -->
 <div id="loadingScreen">
-    <div id="progressBarContainer">
-        <div id="progressBar"></div>
+    <div id="progressContainer">
+        <div id="progressBar">
+            <div id="progressFill"></div>
+        </div>
     </div>
-    <div id="loadingText"></div>
+    <div id="progressSpinner" class="loader"></div>
+    <div id="loadingText">Loading...</div>
 </div>
 
 <!-- Shared Parameters -->
@@ -241,52 +244,21 @@
     <!-- Results Section -->
     <section id="results" class="results hidden">
         <div id="prospectiveResults">
-<!--            <div class="charts-scroll-container">-->
-<!--                <button class="carousel-arrow left-arrow" id="prevSlide">&#8592;</button>-->
-
-<!--                <div id="carousel" class="charts-carousel">-->
-<!--                    <div class="chart-slide">-->
-<!--                        <h2>Observed vs. Predicted Incidence Rates</h2>-->
-<!--                        <canvas id="expectedIncidenceChartProspective"></canvas>-->
-<!--                    </div>-->
-<!--                    <div class="chart-slide">-->
-<!--                        <h2>Kaplan-Meier curve for simulated breast cancer prospective cohort</h2>-->
-<!--                        <div id="kaplanMeierCurve" class="kaplan-meier-container"></div>-->
-<!--                    </div>-->
-<!--                </div>-->
-
-<!--                <button class="carousel-arrow right-arrow" id="nextSlide">&#8594;</button>-->
-<!--            </div>-->
-
-
-
-
-                <!-- Slide 1 -->
-                <div class="mySlides fade">
+                <div class="charts fade">
                     <div class="chart-slide">
                         <h2>Observed vs. Predicted Incidence Rates</h2>
                         <canvas id="expectedIncidenceChartProspective"></canvas>
                     </div>
                 </div>
-
-                <!-- Slide 2 -->
-                <div class="mySlides fade">
+                <div class="charts fade">
                     <div class="chart-slide">
                         <h2>Kaplan-Meier curve for simulated breast cancer prospective cohort</h2>
                         <div id="kaplanMeierCurve" class="kaplan-meier-container"></div>
                     </div>
                 </div>
                 <div id="tooltip" style="position: absolute; opacity: 0; pointer-events: none; background: white; border: 1px solid #ccc; padding: 8px; border-radius: 4px; font-size: 14px;"></div>
-                <!-- Arrows -->
                 <a class="prev" id="prevSlide">&#10094;</a>
                 <a class="next" id="nextSlide">&#10095;</a>
-
-
-
-
-
-
-
             <div class="footer">
                 <button id="downloadProspective" class="button download-button">
                     <i class="fas fa-download"></i> Export All Profiles As CSV

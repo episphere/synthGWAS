@@ -37,6 +37,9 @@ import {
     nelderMead,
     setView,
     getHomePage,
+    showLoadingText,
+    showLoading,
+    hideLoading
 } from './index.js';
 
 export {
@@ -77,5 +80,8 @@ export {
     loadScore,
     nelderMead,
     setView,
-    getHomePage
+    getHomePage,
+    showLoadingText,
+    showLoading,
+    hideLoading
 };

@@ -20,7 +20,7 @@ const config = {
 };
 
 
-// App entry point
+/* global localforage */
 (async function main() {
     try {
         await loadDependencies(dependencyUrls);

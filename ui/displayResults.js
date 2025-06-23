@@ -119,11 +119,8 @@ function renderKaplanMeierChart(kmCurveData) {
         bottom: Math.min(110, containerHeight * 0.2), // 10% or 80px max
         left: Math.min(70, containerWidth * 0.1)     // 10% or 60px max
     };
-    console.log(margin)
     const width = containerWidth - margin.left - margin.right;
     const height = containerHeight - margin.top - margin.bottom;
-    console.log(width, height);
-    console.log(width + margin.left + margin.right,height + margin.top + margin.bottom);
 
     // Clear previous chart
     htmlElement.html('');

@@ -35,7 +35,7 @@ export async function handleSnpsInfo(pgsIdInput, incidenceRateFile, pgsModelFile
 }
 
 
-function startWorkerPool(workerScript, tasks, loadingScreen) {
+function startWorkerPool(workerScript, tasks) {
     return new Promise((resolve, reject) => {
         const workerCount = 4;
         const workers = Array(workerCount).fill(null);
@@ -55,7 +55,6 @@ function startWorkerPool(workerScript, tasks, loadingScreen) {
                 if (worker) worker.terminate();
             });
 
-            loadingScreen.style.display = 'none';
             resolve(); // <== This will now work correctly
         };
 
@@ -111,15 +110,13 @@ function startWorkerPool(workerScript, tasks, loadingScreen) {
         }
 
         if (totalTasks === 0) {
-            loadingScreen.style.display = 'none';
             resolve(); // Resolve immediately if no tasks
         }
     });
 }
 
 
-export async function handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile, loadingScreen) {
-    loadingScreen.style.display = 'flex';
+export async function handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile) {
     const {
         totalProfiles, minAge, maxAge, minFollowUp, maxFollowUp, populationData, gender
     } = config;
@@ -158,14 +155,13 @@ export async function handleProfileRetrieval(config, snpsInfo, k, b, incidenceRa
         });
     });
 
-    await startWorkerPool('worker/profilesWorker.js', tasks, loadingScreen);
+    await startWorkerPool('worker/profilesWorker.js', tasks);
 }
 
 
 export async function handleCaseControlRetrieval(
-    config, controlsPerCase, snpsInfo, k, b, incidenceRateFile, pgsModelFile, loadingScreen
+    config, controlsPerCase, snpsInfo, k, b, incidenceRateFile, pgsModelFile
 ) {
-    loadingScreen.style.display = 'flex';
     const {
         totalProfiles, chunkSize, minAge, maxAge, minFollowUp, maxFollowUp, populationData, gender
     } = config;
@@ -204,5 +200,5 @@ export async function handleCaseControlRetrieval(
         });
     });
 
-    await startWorkerPool('worker/caseControlWorker.js', tasks, loadingScreen);
+    await startWorkerPool('worker/caseControlWorker.js', tasks);
 }
