@@ -9,7 +9,6 @@ self.onmessage = async (e) => {
         const { INDEX } = await import('../constants.js');
         const {
             compressAndStoreResults,
-            reportProgress,
             reportComplete
         } = await import('../utils/workerUtils.js');
 
@@ -17,7 +16,6 @@ self.onmessage = async (e) => {
         let chunkIndex = 0;
 
         while (generatedCases < numberOfCases) {
-            console.log("GEN", generatedCases, numberOfCases);
             let batchProfiles = await processProfiles(
                 snpsInfo,
                 chunkSize,
@@ -57,16 +55,21 @@ self.onmessage = async (e) => {
 
             if (controlsPool.length === 0) continue;
 
-            const { casesMatched, results } = matchCasesControls(casesPool, controlsPool, controlsPerCase);
+            let { casesMatched, results } = matchCasesControls(casesPool, controlsPool, controlsPerCase);
 
             if (casesMatched === 0) continue;
 
-            const forageKey = `${taskId}_chunk_${chunkIndex}`;
+            const remainingToStore = numberOfCases - generatedCases;
 
+            if (casesMatched > remainingToStore) {
+                results = results.slice(0, remainingToStore * (1 + controlsPerCase));
+                casesMatched = remainingToStore;
+            }
+
+            const forageKey = `${taskId}_chunk_${chunkIndex}`;
             await compressAndStoreResults(forageKey, results);
             generatedCases += casesMatched;
             chunkIndex++;
-            reportProgress(generatedCases, numberOfCases);
             batchProfiles = null;
             controlProfiles = null;
         }

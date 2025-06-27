@@ -45,9 +45,7 @@ function startWorkerPool(workerScript, tasks) {
         const progressMap = Array(workerCount).fill(0);
 
         const updateOverallProgress = () => {
-            const totalProgress = progressMap.reduce((sum, p) => sum + p, 0);
-            const averageProgress = totalProgress / workerCount;
-            updateLoadingProgress(averageProgress);
+
         };
 
         const finishProcessing = () => {
@@ -55,7 +53,7 @@ function startWorkerPool(workerScript, tasks) {
                 if (worker) worker.terminate();
             });
 
-            resolve(); // <== This will now work correctly
+            resolve();
         };
 
         const processNextTask = (workerIndex) => {
@@ -76,12 +74,12 @@ function startWorkerPool(workerScript, tasks) {
             worker.onmessage = (e) => {
                 if (e.data.type === 'progress') {
                     progressMap[workerIndex] = e.data.progress;
-                    updateOverallProgress();
                 }
                 else if (e.data.type === 'complete') {
                     worker.terminate();
                     completedTasks++;
                     processNextTask(workerIndex);
+                    updateLoadingProgress(totalTasks / completedTasks);
 
                     if (completedTasks === totalTasks) finishProcessing();
                 }
@@ -175,11 +173,14 @@ export async function handleCaseControlRetrieval(
         Object.entries(groupMap).forEach(([ageGroup, count]) => {
             if (count <= 0) return;
 
-            const startAge = parseInt(ageGroup.substring(0, 2));
-            const endAge = parseInt(ageGroup.substring(2));
+            let startAge = parseInt(ageGroup.substring(0, 2));
+            let endAge = parseInt(ageGroup.substring(2));
             const cases = count;
             const totalInGroup = cases + cases * controlsPerCase;
             const numChunks = Math.ceil(totalInGroup / chunkSize);
+
+            if (minAge > startAge) startAge = minAge;
+            if (maxAge < endAge) endAge = maxAge;
 
             for (let i = 0; i < numChunks; i++) {
                 tasks.push({

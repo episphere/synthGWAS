@@ -16,7 +16,6 @@ export function reportProgress(current, total) {
 
 
 export function reportComplete() {
-    self.postMessage({ type: 'progress', progress: 100 });
     self.postMessage({ type: 'complete' });
 }
 

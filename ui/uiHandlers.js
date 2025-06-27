@@ -24,7 +24,7 @@ async function handleDataGeneration(params) {
         maxFollowUp,
         controlsPerCase = 1,
     } = params;
-
+    console.log(numberOfProfiles)
     let hasError = false;
 
     hideAlert('country');
@@ -288,7 +288,7 @@ function getParams(isRetrospective) {
         countryISO: document.getElementById('countrySelect').value.trim(),
         gender: document.getElementById('genderSelect').value.trim(),
         pgsIdInput: document.getElementById('pgsId').value.trim(),
-        numberOfProfiles: document.getElementById('numberOfProfiles').value.trim(),
+        numberOfProfiles: isRetrospective ? document.getElementById('numberOfCases').value.trim() : document.getElementById('numberOfProfiles').value.trim(),
         minAge: document.getElementById('minAge').value.trim(),
         maxAge: document.getElementById('maxAge').value.trim(),
         minFollowUp: document.getElementById('minFollowUp').value.trim(),
