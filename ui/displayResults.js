@@ -1,12 +1,17 @@
 import { generateKaplanMeierData, getCohort } from '../syntheticDataGenerator.js';
 
 
-export async function displayResults(isRetrospective, observedIncidenceRate, predictedIncidenceRate) {
-    // Validate inputs with detailed error messages
-    if (typeof isRetrospective !== 'boolean') {
-        throw new Error('Need boolean isRetrospective');
-    }
-
+/**
+ * Display results by rendering incidence and survival charts.
+ *
+ * @param {Array<{age: string, rate: number}>} observedIncidenceRate - Array of observed incidence rates.
+ * @param {Array<{age: string, rate: number}>} predictedIncidenceRate - Array of predicted incidence rates.
+ *
+ * @throws {Error} If input validation fails or rendering fails.
+ *
+ * @returns {Promise<void>} Resolves when results are displayed.
+ */
+export async function displayResults(observedIncidenceRate, predictedIncidenceRate) {
     if (!Array.isArray(observedIncidenceRate) || !observedIncidenceRate.length) {
         throw new Error('Missing observed data');
     }
@@ -15,23 +20,27 @@ export async function displayResults(isRetrospective, observedIncidenceRate, pre
         throw new Error('Missing predicted data');
     }
 
-
     try {
-        // UI State Management
-        toggleResultsVisibility();
-
-        // Parallelize independent operations where possible
-        await Promise.all([
-            renderIncidenceChart(observedIncidenceRate, predictedIncidenceRate),
-            processCohortAndRenderKaplanMeier()
-        ]);
+        renderIncidenceChart(observedIncidenceRate, predictedIncidenceRate);
+        await processCohortAndRenderKaplanMeier();
     } catch (error) {
         console.error('displayResults failed: ', error);
         throw error;
     }
 }
 
-
+/**
+ * Process cohort profiles and render the Kaplan-Meier survival chart.
+ *
+ * Loads up to MAX_PROFILES cohort profiles, generates Kaplan-Meier survival data,
+ * and renders the Kaplan-Meier chart. Throws errors if no profiles are available
+ * or data generation fails.
+ *
+ * @throws {Error} If no cohort profiles are loaded or Kaplan-Meier data generation fails.
+ * @throws {Error} If rendering the Kaplan-Meier chart fails.
+ *
+ * @returns {Promise<void>} Resolves when the Kaplan-Meier chart has been rendered.
+ */
 async function processCohortAndRenderKaplanMeier() {
     const MAX_PROFILES = 50_000;
     const cohort = await loadCohortProfiles(MAX_PROFILES);
@@ -57,6 +66,15 @@ async function processCohortAndRenderKaplanMeier() {
 }
 
 
+/**
+ * Load a specified maximum number of cohort profiles asynchronously.
+ *
+ * @param {number} maxProfiles - Maximum number of profiles to load.
+ *
+ * @throws {Error} If maxProfiles is not a valid number or cohort iterator is invalid.
+ *
+ * @returns {Promise<Object[]>} Resolves with an array of loaded cohort profiles.
+ */
 async function loadCohortProfiles(maxProfiles) {
     if (typeof maxProfiles != 'number' || isNaN(maxProfiles)) {
         throw new Error('Max profiles must be number');
@@ -86,6 +104,17 @@ async function loadCohortProfiles(maxProfiles) {
 }
 
 
+/**
+ * Render a Kaplan-Meier survival curve chart with confidence intervals.
+ *
+ * @param {Object[]} kmCurveData - Array of data points with `time`, `survival`, `lower`, and `upper` properties.
+ *
+ * @throws {TypeError} If kmCurveData is missing or not an array.
+ * @throws {Error} If required HTML elements or tooltip are not found.
+ * @throws {Error} If the tooltip was not correctly generated.
+ *
+ * @returns {void}
+ */
 function renderKaplanMeierChart(kmCurveData) {
     if (!kmCurveData || !Array.isArray(kmCurveData)) {
         throw new TypeError('Missing or invalid input');
@@ -244,37 +273,19 @@ function renderKaplanMeierChart(kmCurveData) {
 }
 
 
-export function toggleResultsVisibility() {
-    const prospectiveGroup = document.querySelector('#prospective');
-    const retrospectiveGroup = document.querySelector('#retrospective');
-    const tutorial = document.querySelector('#tutorial');
-    const sharedParameters = document.getElementById('sharedParameters');
-    const generateButton = document.getElementById('prospectiveGenerate');
-    const resultsDiv = document.getElementById('results');
-
-    if (!prospectiveGroup || !retrospectiveGroup || !generateButton || !resultsDiv || !sharedParameters) {
-        throw new Error('HTML elements not found.');
-    }
-
-    if (resultsDiv.classList.contains('hidden')) {
-        prospectiveGroup.style.display = 'none';
-        retrospectiveGroup.style.display = 'none';
-        tutorial.style.display = 'none';
-        sharedParameters.style.display = 'none';
-        generateButton.style.display = 'none';
-        resultsDiv.classList.remove('hidden');
-    }
-    else {
-        prospectiveGroup.style.display = '';
-        retrospectiveGroup.style.display = '';
-        tutorial.style.display = '';
-        sharedParameters.style.display = '';
-        generateButton.style.display = '';
-        resultsDiv.classList.add('hidden');
-    }
-}
-
-
+/**
+ * Renders a line chart comparing observed and predicted incidence rates by age.
+ *
+ * @param {Array<{age: string, rate: number}>} observedIncidenceRate - Array of observed incidence rates by age.
+ * @param {Array<{age: string, rate: number}>} predictedIncidenceRate - Array of predicted incidence rates by age.
+ *
+ * @throws {Error} If Input data is missing
+ * @throws {Error} If non-numeric rates are found in data
+ * @throws {Error} If Chart canvas element is not found
+ * @throws {Error} If Chart creation fails
+ *
+ * @returns {void}
+ */
 export async function renderIncidenceChart(observedIncidenceRate, predictedIncidenceRate) {
     /* global Chart */
     if (!observedIncidenceRate || !predictedIncidenceRate) {
@@ -316,7 +327,7 @@ export async function renderIncidenceChart(observedIncidenceRate, predictedIncid
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,  // <---- add this
+            maintainAspectRatio: false,
             plugins: {
                 tooltip: {
                     callbacks: {

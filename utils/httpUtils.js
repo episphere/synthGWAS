@@ -10,21 +10,13 @@ export async function httpRequest(url) {
 
 export async function asyncPool(poolLimit, array, iteratorFn) {
     const ret = [];
-    const executing = [];
 
-    for (const item of array) {
-        const p = iteratorFn(item);
-        ret.push(p);
-
-        if (poolLimit <= array.length) {
-            const e = p.then(() => executing.splice(executing.indexOf(e), 1));
-            executing.push(e);
-
-            if (executing.length >= poolLimit) {
-                await Promise.race(executing);
-            }
-        }
+    for (let i = 0; i < array.length; i += poolLimit) {
+        const batch = array.slice(i, i + poolLimit);
+        const batchPromises = batch.map(item => iteratorFn(item));
+        const batchResults = await Promise.all(batchPromises);
+        ret.push(...batchResults);
     }
 
-    return Promise.all(ret);
+    return ret;
 }

@@ -1,7 +1,7 @@
 import {
     distributeProfilesByAgeGroups,
     getAgeGroupsBetween,
-    updateLoadingProgress
+    updateLoadingProgress,
 } from '../syntheticDataGenerator.js';
 
 

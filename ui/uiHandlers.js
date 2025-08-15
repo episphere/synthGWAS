@@ -4,14 +4,14 @@ import {
     handleSnpsInfo,
     downloadVcfFromChunks,
     downloadCohortFromChunks,
-    loadPopulation, showAlert, hideAlert, displayResults, toggleResultsVisibility, updateLoadingProgress,
-    setView, getHomePage, showLoading, showLoadingText, hideLoading
+    loadPopulation, showAlert, hideAlert, updateLoadingProgress,
+    showLoading, showLoadingText, hideLoading, getCountrySnpFrequency
 } from '../syntheticDataGenerator.js';
 import { GENDER, DEFAULT_CHUNK_SIZE } from '../constants.js';
 
 
 /* global localforage */
-async function handleDataGeneration(params) {
+async function handleDataGeneration(params, config) {
     const {
         isRetrospective = false,
         countryISO,
@@ -24,57 +24,13 @@ async function handleDataGeneration(params) {
         maxFollowUp,
         controlsPerCase = 1,
     } = params;
-    console.log(numberOfProfiles)
-    let hasError = false;
-
-    hideAlert('country');
-    hideAlert('pgs');
-    hideAlert('profiles');
-    hideAlert('cases');
-    hideAlert('age-range');
-    hideAlert('age-follow');
-    hideAlert('controls');
-
-    if (!countryISO) {
-        showAlert('country');
-        hasError = true;
-    }
-
-    if (!/^(PGS\d{6}|\d{1,6})$/.test(pgsIdInput)) {
-        showAlert('pgs');
-        hasError = true;
-    }
-
-    if (!numberOfProfiles || isNaN(numberOfProfiles) || Number(numberOfProfiles) <= 0) {
-        if (isRetrospective) showAlert('cases');
-        else showAlert('profiles');
-        hasError = true;
-    }
-
-    if (!minAge || isNaN(minAge) || !maxAge || isNaN(maxAge) || Number(minAge) < 0 || Number(maxAge) < Number(minAge)) {
-        showAlert('age-range');
-        hasError = true;
-    }
-
-    if (!minFollowUp || isNaN(minFollowUp) || !maxFollowUp || isNaN(maxFollowUp) || Number(minFollowUp) < 0 || Number(maxFollowUp) < Number(minFollowUp)) {
-        showAlert('age-follow');
-        hasError = true;
-    }
-
-    if (!controlsPerCase || isNaN(controlsPerCase)) {
-        showAlert('controls');
-        hasError = true;
-    }
-
-    if (hasError) return;
-
     showLoading('spinner');
     showLoadingText('Modeling Hazard Rates...')
     updateLoadingProgress(0);
 
     let snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b;
-    const incidenceRateFile = '../data/age_specific_breast_cancer_incidence_rates.csv';
-    const pgsModelFile = 'data/pgs_model_test.txt';
+    const incidenceRateFile = config.incidenceRateFile;
+    const pgsModelFile = config.pgsModelFile
 
     try {
         ({ snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b } = await handleSnpsInfo(
@@ -120,7 +76,7 @@ async function handleDataGeneration(params) {
             config.chunkSize = Math.min(DEFAULT_CHUNK_SIZE, Number(numberOfProfiles));
             await handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile);
         }
-
+        console.log("HIDING LOADER")
         hideLoading();
 
         return { observedIncidenceRate, predictedIncidenceRate };
@@ -129,14 +85,6 @@ async function handleDataGeneration(params) {
         alert('Error during profile generation, please reload the page and try again');
         throw error;
     }
-}
-
-
-export function initializeUI(config) {
-    setupSlideshow();
-    setupButtons();
-    setupInput();
-    setupCohortGeneration();
 }
 
 
@@ -191,7 +139,7 @@ export function setupSlideshow() {
 }
 
 
-function setupButtons() {
+export function setupDownloadBtns() {
     // Download profiles
     /* global localforage, pako */
     try {
@@ -221,21 +169,16 @@ function setupButtons() {
                 filename: 'profiles.vcf'
             });
         });
-
-        document.getElementById('reset').addEventListener('click', async() => {
-            await toggleResultsVisibility();
-            setView(getHomePage());
-        });
     }
     catch (error) {
-        console.error('Error setting buttons: ', error);
+        console.error('Error setting download buttons: ', error);
         throw error;
     }
 }
 
 
 /* global localforage */
-function setupInput() {
+export function setupInput() {
     try {
         document.getElementById('countrySelect').addEventListener('change', async (e) => {
             const countryISO = e.target.value;
@@ -250,56 +193,76 @@ function setupInput() {
         // <option value="${GENDER.BOTH}" selected>Both</option>
         //         <option value="${GENDER.MALE}">Male</option>
         document.getElementById('genderSelect').innerHTML = `
-        <option value="${GENDER.FEMALE}">Female</option>
-    `;
+            <option value="${GENDER.FEMALE}">Female</option>
+        `;
 
-        document.getElementById('pgsId').innerHTML = `
-        <option value="${'PGS000004'}">Breast Cancer (PGS000004)</option>
-    `;
+        document.getElementById('diseaseSelect').innerHTML = `
+            <option value="${'PGS000004'}">Breast Cancer (PGS000004)</option>
+        `;
+
+        const checkbox = document.getElementById('retrospectiveToggle');
+        const advancedSection = document.getElementById('retrospectiveZone');
+
+        checkbox.addEventListener('change', () => {
+            advancedSection.style.display = checkbox.checked ? 'block' : 'none';
+        });
     }
     catch (error) {
         console.error('Error setting input parameters: ', error);
-        throw error;
     }
 }
 
 
-function setupCohortGeneration() {
-    const prospectiveBtn = document.getElementById('prospectiveGenerate');
-    const retrospectiveBtn = document.getElementById('retrospectiveGenerate');
+export function setupCohortGeneration(config) {
+    const generateBtn = document.getElementById('generateZone');
 
-    prospectiveBtn.addEventListener('click', async () => {
-        const params = getParams(false);
-        if (!validateParams(params)) return;
-        await generateAndDisplay(params);
-    });
+    try {
+        generateBtn.style.display = 'flex';
+        generateBtn.addEventListener('click', async () => {
+            const params = getParams(false);
 
-    retrospectiveBtn.addEventListener('click', async () => {
-        const params = getParams(true);
-        if (!validateParams(params)) return;
-        await generateAndDisplay(params);
-    });
+            if (!validateParams(params)) {
+                console.warn("Some parameters are missing");
+
+                return;
+            }
+
+            await generateAndDisplay(params, config);
+        });
+    }
+    catch (error) {
+        console.error('Error setting generate button: ', error);
+    }
 }
 
 
 function getParams(isRetrospective) {
-    return {
-        isRetrospective,
-        countryISO: document.getElementById('countrySelect').value.trim(),
-        gender: document.getElementById('genderSelect').value.trim(),
-        pgsIdInput: document.getElementById('pgsId').value.trim(),
-        numberOfProfiles: isRetrospective ? document.getElementById('numberOfCases').value.trim() : document.getElementById('numberOfProfiles').value.trim(),
-        minAge: document.getElementById('minAge').value.trim(),
-        maxAge: document.getElementById('maxAge').value.trim(),
-        minFollowUp: document.getElementById('minFollowUp').value.trim(),
-        maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
-        controlsPerCase: document.getElementById('controlsPerCase').value.trim(),
-        loadingScreen: document.getElementById('loadingScreen'),
-    };
+    try {
+        return {
+            isRetrospective,
+            countryISO: document.getElementById('countrySelect').value.trim(),
+            gender: document.getElementById('genderSelect').value.trim(),
+            pgsIdInput: document.getElementById('diseaseSelect').value.trim(),
+            numberOfProfiles: isRetrospective ? document.getElementById('numberOfCases').value.trim() : document.getElementById('numberOfProfiles').value.trim(),
+            minAge: document.getElementById('minAge').value.trim(),
+            maxAge: document.getElementById('maxAge').value.trim(),
+            minFollowUp: document.getElementById('minFollowUp').value.trim(),
+            maxFollowUp: document.getElementById('maxFollowUp').value.trim(),
+            controlsPerCase: document.getElementById('retrospectiveInput').value.trim(),
+            loadingScreen: document.getElementById('loadingScreen'),
+        };
+    }
+    catch (error) {
+        console.error('Error finding parameters: ', error);
+    }
 }
 
 
 function validateParams(params) {
+    if (!params) {
+        throw new Error('Parameters is required');
+    }
+
     let hasError = false;
 
     hideAlert('country');
@@ -338,7 +301,7 @@ function validateParams(params) {
         hasError = true;
     }
 
-    if (!params.controlsPerCase || isNaN(params.controlsPerCase)) {
+    if (params.isRetrospective && (!params.controlsPerCase || isNaN(params.controlsPerCase))) {
         showAlert('controls');
         hasError = true;
     }
@@ -347,10 +310,13 @@ function validateParams(params) {
 }
 
 
-async function generateAndDisplay(params) {
+async function generateAndDisplay(params, config) {
     try {
-        const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
-        await displayResults(params.isRetrospective, observedIncidenceRate, predictedIncidenceRate);
+        const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params, config);
+
+        await localforage.setItem('observedIncidenceRate', observedIncidenceRate);
+        await localforage.setItem('predictedIncidenceRate', predictedIncidenceRate);
+        window.location.href = 'results.html';
     } catch (error) {
         console.error('Error generating cohort:', error);
         alert('Failed to generate cohort. Please check your input or try again.');

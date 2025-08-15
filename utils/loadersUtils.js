@@ -78,7 +78,7 @@ export async function loadCountries() {
             .sort((a, b) => a.name.localeCompare(b.name));
 
         const europeanAncestryCountries = [
-            'United States',
+            'United States', 'Japan', 'Finland'
         ];
 
         const filteredCountries = realCountries.filter(country =>

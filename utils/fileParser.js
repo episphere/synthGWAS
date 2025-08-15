@@ -1,5 +1,5 @@
 export function parseFile(file) {
-    const data = file.split('\n').map(line => line.trim().split(/\s+/)).filter(line => line[0] && !line[0].startsWith('#'));
+    const data = file.split('\n').map(line => line.trim().split('\t')).filter(line => line[0] && !line[0].startsWith('#'));
 
     return { headers: data[0], values: data.slice(1) };
 }

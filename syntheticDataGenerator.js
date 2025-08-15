@@ -18,8 +18,6 @@ import {
     processHeader,
     handleSnpsInfo,
     downloadCohortFromChunks,
-    initializeRouting,
-    handleRouting,
     getAgeGroupsBetween,
     distributeProfilesByAgeGroups,
     loadPopulation,
@@ -32,14 +30,16 @@ import {
     generateKaplanMeierData,
     getCohort,
     downloadVcfFromChunks,
-    toggleResultsVisibility,
     loadScore,
     nelderMead,
-    setView,
     getHomePage,
     showLoadingText,
     showLoading,
-    hideLoading
+    hideLoading,
+    getCountrySnpFrequency,
+    getRsIdsAndFrequency,
+    getEnsemblFrequency,
+    setupInput
 } from './index.js';
 
 export {
@@ -62,8 +62,6 @@ export {
     processHeader,
     handleSnpsInfo,
     downloadCohortFromChunks,
-    initializeRouting,
-    handleRouting,
     getAgeGroupsBetween,
     distributeProfilesByAgeGroups,
     loadPopulation,
@@ -76,12 +74,14 @@ export {
     generateKaplanMeierData,
     getCohort,
     downloadVcfFromChunks,
-    toggleResultsVisibility,
     loadScore,
     nelderMead,
-    setView,
     getHomePage,
     showLoadingText,
     showLoading,
-    hideLoading
+    hideLoading,
+    getCountrySnpFrequency,
+    getRsIdsAndFrequency,
+    getEnsemblFrequency,
+    setupInput
 };

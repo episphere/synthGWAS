@@ -1,61 +1,208 @@
 import { asyncPool, httpRequest } from './httpUtils.js';
-import { loadScore, processSnpData, parseFile, nelderMead } from '../syntheticDataGenerator.js';
+import {loadScore, processSnpData, parseFile, nelderMead, sleep} from '../syntheticDataGenerator.js';
 import { INDEX } from '../constants.js';
 
 
-/*
-TODO: Currently, RS IDs are not used
-export async function getRsIds(snpsInfo, apiKey) {
-    const requestInterval = 100; // 100ms between different SNPs
-    const retryDelay = 150;       // 50ms between retries for same SNP
-    const maxRetries = 3;
 
-    // Helper function with exponential backoff
-    const fetchWithRetry = async (url) => {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            let response = await fetch(url);
-            console.log(response.ok);
-            if (!response.ok) {
-                console.log(`Failed to fetch, trying attempt number ${attempt}`);
-                if (attempt < maxRetries) {
-                    console.log(`Failed to fetch, trying attempt number ${attempt}`);
-                    await sleep(retryDelay);
-                }
-                else throw new Error(`HTTP ${response.status}`);
-            }
-            else {
-                return response.json();
-            }
+function matchAlleles(ensemblAlleles, effect, other) {
+    // Normalize: remove dashes, upper case, etc.
+    const norm = (allele) => allele?.replace(/-/g, '').toUpperCase();
+    const normEffect = norm(effect);
+    const normOther = norm(other);
+    const normalizedAlleles = ensemblAlleles.map(norm);
+
+    return (
+        normalizedAlleles.includes(normEffect) |
+        normalizedAlleles.includes(normOther)
+    );
+}
+
+export async function getRsId(variantPosition) {
+    const [chromosome, position, effect, other] = variantPosition.split(':');
+    const rsUrl = `https://rest.ensembl.org/overlap/region/human/${chromosome}:${position}-${position}?feature=variation;`;
+    const response = await fetch(rsUrl, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const rsInfo = await response.json();
+
+    if (rsInfo.length === 0) {
+        console.warn(`No rsID found for ${variantPosition}`);
+        return null;
+    }
+
+    const matches = rsInfo.filter(result => {
+        if (!Array.isArray(result.alleles)) return false;
+        return matchAlleles(result.alleles, effect, other);
+    });
+
+    return rsInfo[0].id;
+}
+
+export async function getManyRsIds(snpList, concurrency = 15) {
+    const results = [];
+    let index = 0;
+
+    async function next() {
+        if (index >= snpList.length) return;
+
+        const currentIndex = index++;
+        try {
+            results[currentIndex] = await getRsId(snpList[currentIndex]);
+            await sleep(1000)
+        } catch (e) {
+            console.error(`Error for ${snpList[currentIndex]}:`, e);
+            results[currentIndex] = null;
         }
-    };
 
-    for (let i = 0; i < snpsInfo.length - 300; i++) { // Removed -310 from loop condition
-        const snpString = snpsInfo[i].id;
-        const [chromosome, position] = snpString.split(':');
-        const eUtilsURL = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=snp&term=${chromosome}[BCHR]+AND+${position}[BPOSITION]&retmode=json${apiKey ? `&api_key=${apiKey}` : ''}`;
+        return next(); // run next when done
+    }
+
+    // Start the initial pool
+    const workers = [];
+    for (let i = 0; i < concurrency; i++) {
+        workers.push(next());
+    }
+
+    await Promise.all(workers);
+
+    return results;
+}
+
+
+export async function getEnsemblFrequency(rsID, ancestry='eur') {
+    const ancestries = ['afr', 'amr', 'eas', 'eur', 'sas']
+    const url = `https://rest.ensembl.org/variation/human/${rsID}?pops=1`;
+    const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json'}
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+
+    if (!data.populations?.length) return;
+
+    // Normalize ancestry to lowercase once
+    const ancestryLC = ancestry.toLowerCase();
+
+    // Filter by matching ancestry prefix and suffix
+    const matches = data.populations.filter(popInfo => {
+        const [prefix, phase, suffix] = popInfo.population.split(':');
+
+        return prefix === '1000GENOMES' && suffix.toLowerCase() === ancestryLC;
+    });
+
+    // If nothing matches, stop
+    if (!matches.length) return;
+
+    // If minor_allele is defined, look for it first
+    if (data.minor_allele) {
+        const match = matches.find(popInfo => popInfo.allele === data.minor_allele);
+
+        if (match) {
+            return match.frequency;
+        }
+    }
+    // If not found or no minor_allele defined, choose the allele with the lowest frequency
+    const lowest = matches.reduce((min, curr) => {
+        return parseFloat(curr.frequency) < parseFloat(min.frequency) ? curr : min;
+    });
+
+    return lowest.frequency;
+}
+
+
+export async function getFrequencies(rsIds, concurrency=200) {
+    const results = [];
+    let index = 0;
+
+    async function next() {
+        if (index >= rsIds.length) return;
+
+        const currentIndex = index++;
+
+        if (rsIds[currentIndex] === null) {
+            results[currentIndex] = null;
+
+            return next(); // run next when done
+        }
 
         try {
-            const data = await fetchWithRetry(eUtilsURL);
-            const rsID = data?.esearchresult?.idlist?.[0];
-
-            if (!rsID) {
-                console.error(`No rsID found for ${snpString} after ${maxRetries} attempts`);
-                continue;
-            }
-
-            console.log(`rs${rsID} added for ${snpString}`);
-            snpsInfo[i].rsID = rsID;
-        } catch (error) {
-            console.error(`Failed attempt for ${snpString}: ${error.message}`);
+            results[currentIndex] = await getEnsemblFrequency(rsIds[currentIndex]);
+        } catch (e) {
+            console.error(` ${rsIds[currentIndex]}:`, e);
+            results[currentIndex] = null;
         }
 
-        // Only wait if not last item
-        if (i < snpsInfo.length - 1) await sleep(requestInterval);
+        return next(); // run next when done
     }
+
+    // Start the initial pool
+    const workers = [];
+    for (let i = 0; i < concurrency; i++) {
+        workers.push(next());
+    }
+
+    await Promise.all(workers);
+
+    return results;
+}
+
+
+export async function getRsIdsAndFrequency(snpsInfo, ancestry) {
+    if (!snpsInfo.length) {
+        throw new Error('No SNPs available for profile generation.');
+    }
+
+    // Check if ALL SNPs already have rsID defined
+    const hasRsIds = snpsInfo.every(snp => snp.rsID && snp.rsID.trim() !== '');
+
+    let rsIdList;
+
+    if (hasRsIds) {
+        rsIdList = snpsInfo.map(snp => snp.rsID);
+    }
+    else {
+        const snpList = snpsInfo.map(snp => snp.id);
+        rsIdList = await getManyRsIds(snpList);
+
+        // Update snpsInfo with the resolved rsIDs
+        rsIdList.forEach((rsId, index) => {
+            snpsInfo[index].rsID = rsId;
+        });
+    }
+
+    const frequencies = await getFrequencies(rsIdList, ancestry);
+
+    rsIdList.forEach((rsId, index) => {
+        if (frequencies[index]) {
+            snpsInfo[index].maf = frequencies[index];
+        }
+    });
 
     return snpsInfo;
 }
-*/
+
+
+export async function getCountrySnpFrequency() {
+    const link = 'https://rest.ensembl.org/variation/human/rs58894006?pops=1'
+
+    const response = await fetch(link, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+        console.error(`HTTP error! status: ${response.status}`);
+        return;
+    }
+
+    const data = await response.json();
+}
 
 
 export async function getChromosomeAndPosition(rsIDs, genomeBuild, apiKey) {
@@ -342,15 +489,15 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
 }
 
 
-export async function getSnpsInfo(pgsId) {
+export async function getSnpsInfo(pgsFile, build=38) {
     //const pgsModel = await loadScore(pgsId);
     //const parsedPgsModel = parseFile(pgsModel);
 
     // Test
-    const response = await fetch('../data/pgs_model_test.txt');
+    const response = await fetch(pgsFile);
     const text = await response.text();
 
-    return await processSnpData(parseFile(text));
+    return await processSnpData(parseFile(text), build);
 }
 
 

@@ -36,7 +36,7 @@ export function hideAlert(inputId) {
 
 
 export function getHomePage() {
-    return window.location.hash.substring(1) || 'prospective';
+    return window.location.hash.substring(1) || 'generation';
 }
 
 

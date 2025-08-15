@@ -1,279 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>synthGWAS</title>
-    <link rel="stylesheet" href="css/style.css">
+    <meta charset="utf-8" />
+    <title>SynthGWAS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
 
-<!-- Header -->
-<header class="header">
+<body class="index-body">
+    <header class="header">
     <nav class="main-nav">
         <div class="logo">
             <i class="fas fa-dna"></i>
-            <a href="#" data-page="prospective" class="logo-title">SynthGWAS</a>
+            <a href="index.html" class="logo-title">SynthGWAS</a>
         </div>
-
         <ul class="nav-links">
-            <li><a href="#" data-page="prospective" class="active">Prospective Cohort</a></li>
-            <li><a href="#" data-page="retrospective">Retrospective Cohort</a></li>
-            <li><a href="#" data-page="tutorial">Tutorial</a></li>
+            <li><a href="index.html" class="active">Tutorial</a></li>
+            <li><a href="generator.html">Cohort Generation</a></li>
+            <li><a href="results.html">Results</a></li>
         </ul>
     </nav>
 </header>
 
-<!-- Loading Screen -->
-<div id="loadingScreen">
-    <div id="progressContainer">
-        <div id="progressBar">
-            <div id="progressFill"></div>
-        </div>
-    </div>
-    <div id="progressSpinner" class="loader"></div>
-    <div id="loadingText">Loading...</div>
-</div>
-
-<!-- Shared Parameters -->
-<section id="sharedParameters" class="shared-params">
-    <div class="input-group">
-        <div class="alert hidden" id="alert-country">Please select a country first to load population data.</div>
-        <label for="countrySelect">Country:</label>
-        <select id="countrySelect" class="country-select">
-            <option value="" disabled selected hidden>Loading Countries...</option>
-        </select>
-    </div>
-
-    <div class="input-group">
-        <label for="genderSelect">Gender:</label>
-        <select id="genderSelect" class="gender-select">
-            <option value="" disabled selected hidden>Loading Genders...</option>
-        </select>
-    </div>
-
-    <div class="input-group">
-        <label for="pgsId">Disease:</label>
-        <select id="pgsId" class="pgs-select">
-            <option value="" disabled selected hidden>Loading PGS IDs...</option>
-        </select>
-    </div>
-
-    <div class="input-group">
-        <div class="alert hidden" id="alert-age-range">Please enter a valid age range.</div>
-        <label for="minAge">Age of Entry Range (years):</label>
-        <div class="age-range">
-            <input type="number" id="minAge" placeholder="Min Age" value="30">
-            <span>to</span>
-            <input type="number" id="maxAge" placeholder="Max Age" value="80">
-        </div>
-    </div>
-
-    <div class="input-group">
-        <div class="alert hidden" id="alert-age-follow">Please enter a valid follow-up range.</div>
-        <label for="minFollowUp">Follow-Up Period (years):</label>
-        <div class="followUp-range">
-            <input type="number" id="minFollowUp" placeholder="Min Follow Up" value="15" min="1" max="50">
-            <span>to</span>
-            <input type="number" id="maxFollowUp" placeholder="Max Follow Up" value="30" min="1" max="50">
-        </div>
-    </div>
-</section>
-
-<!-- Main Content -->
-<main>
-    <!-- Tutorial Page -->
-    <section id="tutorial" class="page">
+    <div id="tutorial" class="tutorial">
         <article class="tutorial-content">
-            <h2>Getting Started Guide <span class="version-tag">v1.0</span></h2>
+            <!-- Title -->
+            <h2 id="getting-started">
+                Getting Started Guide <span class="version-tag">v1.0</span>
+            </h2>
 
-            <div class="tutorial-step">
-                <h3>1. Select Cohort Type</h3>
-                <p>Begin by choosing the type of cohort you want to simulate:
+            <!-- Step 1 -->
+            <section class="tutorial-step">
+                <h3 id="step-1">1. Select Cohort Type</h3>
+                <p>
+                    Begin by choosing the type of cohort you want to simulate:
                     <strong>Prospective</strong> or <strong>Retrospective</strong>.
                 </p>
-            </div>
+            </section>
 
-            <div class="tutorial-step">
-                <h3>2. Define Cohort Type Common Parameters</h3>
-                <p>Regardless of the chosen cohort type, you'll need to configure the following:</p>
+            <!-- Step 2 -->
+            <section class="tutorial-step">
+                <h3 id="step-2">2. Define Cohort Type Common Parameters</h3>
+                <p>Regardless of the chosen cohort type, configure the following:</p>
                 <ul>
-                    <li><strong>Country:</strong> Select the country whose age distribution will be used for generating
-                        study entry ages. Current version will only support USA.
+                    <li>
+                        <strong>Country:</strong> Select the country whose age distribution will be used
+                        for generating study entry ages. <em>Current version supports USA only.</em>
                     </li>
-                    <li><strong>Gender:</strong> Choose the biological sex (Male, Female or Both) for the cohort. Current version will only support Female</li>
-                    <li><strong>Disease:</strong> Provide a Polygenic Score identifier from the
-                        <a href="https://www.pgscatalog.org/" target="_blank">PGS Catalog</a>, such as
-                        <code>PGS000004</code> or simply <code>4</code>. Current version will only support Breast Cancer (PGS000004).
+                    <li>
+                        <strong>Gender:</strong> Choose Male, Female, or Both.
+                        <em>Current version supports Female only.</em>
                     </li>
-                    <li><strong>Age of Entry Range:</strong> Define the lower and upper bounds for the entry age of each profile.
+                    <li>
+                        <strong>Disease:</strong> Choose a disease with an associated Polygenic Score identifier from the
+                        <a href="https://www.pgscatalog.org/" target="_blank" rel="noopener">PGS Catalog</a>,
+                        such as <code>PGS000004</code> (or simply <code>4</code>).
+                        <em>Current version supports Breast Cancer (PGS000004).</em>
                     </li>
-                    <li><strong>Follow-up Interval:</strong> Set the minimum and maximum number of years each profile
-                        will be followed after study entry.
+                    <li>
+                        <strong>Age of Entry Range:</strong> Set lower and upper bounds for entry age.
+                    </li>
+                    <li>
+                        <strong>Follow-up Interval:</strong> Set the minimum and maximum number of years
+                        each profile will be followed after study entry.
                     </li>
                 </ul>
-            </div>
+            </section>
 
-            <div class="tutorial-step">
-                <h3>3. Cohort-Specific Settings</h3>
+            <!-- Step 3 -->
+            <section class="tutorial-step">
+                <h3 id="step-3">3. Cohort-Specific Settings</h3>
                 <p>Depending on the selected cohort type, specify the appropriate parameters:</p>
                 <ul>
-                    <li><strong>Prospective Cohort:</strong>
+                    <li>
+                        <strong>Prospective Cohort</strong>
                         <ul>
-                            <li><strong>Total Number of Profiles:</strong> Choose the number of profiles to be generated.</li>
+                            <li><strong>Total Number of Profiles:</strong> Number of profiles to generate.</li>
                         </ul>
-                    <li><strong>Retrospective Cohort:</strong>
+                    </li>
+                    <li>
+                        <strong>Retrospective Cohort</strong>
                         <ul>
-                            <li><strong>Total Number of Cases:</strong> Choose the number of cases to be generated.</li>
-                            <li><strong>Number of Controls per Case:</strong> Choose the number of controls to match to each case. Current version only allows integers.</li>
+                            <li><strong>Total Number of Profiles:</strong> Number of cases to generate.</li>
+                            <li>
+                                <strong>Number of Controls per Case:</strong> Integer number of controls matched to each case.
+                            </li>
                         </ul>
                     </li>
                 </ul>
-            </div>
+            </section>
 
-            <div class="tutorial-step">
-                <h3>4. Generate Data</h3>
-                <p>Click the <strong>Generate Data</strong> button to begin the synthetic data generation process. This may take a
-                    few moments depending on the size of the dataset.</p>
-            </div>
+            <!-- Step 4 -->
+            <section class="tutorial-step">
+                <h3 id="step-4">4. Generate Data</h3>
+                <p>
+                    Click <strong>Generate Data</strong> to begin the synthetic data generation process.
+                    This may take a few moments depending on dataset size.
+                </p>
+                <ol>
+                    <li>The platform retrieves the SNP information required for the simulation.</li>
+                    <li>It generates 100,000 Polygenic Risk Scores (PRS) from the SNP data.</li>
+                    <li>
+                        It fits a Cox Proportional Hazards model to estimate disease incidence parameters,
+                        using real-life incidence rates as the target. Parameters are optimized (Nelder–Mead)
+                        to minimize the difference between predicted and observed cumulative incidence.
+                    </li>
+                    <li>
+                        Using the approximated parameters, synthetic profiles are generated (age and other attributes)
+                        aligned with the target incidence pattern.
+                    </li>
+                    <li>
+                        Finally, the system computes the predicted cumulative incidence curve, the observed cumulative
+                        incidence curve, and a Kaplan–Meier survival curve based on the synthetic cohort.
+                    </li>
+                </ol>
+            </section>
 
-            <div class="tutorial-step">
-                <h3>5. View Statistics and Download Results</h3>
-                <p>Once generation is complete, you can:</p>
+            <!-- Step 5 -->
+            <section class="tutorial-step">
+                <h3 id="step-5">5. View Statistics and Download Results</h3>
+                <p>After generation completes, you can:</p>
                 <ul>
-                    <li><strong>Inspect summary statistics</strong>:
+                    <li>
+                        <strong>Inspect summary statistics:</strong>
                         <ul>
-                            <li><strong>Observed vs Predicted Incidence Rate:</strong> Comparing the real-world data with the one estimated via Cox proportional hazard modeling </li>
-                            <li><strong>Kaplan-Meier Curve:</strong> A step-function plot used to estimate the survival function and visualize time-to-event data, showing the proportion of individuals remaining event-free over time.</li>
+                            <li>
+                                <strong>Observed vs. Predicted Incidence Rate:</strong> Compare real-world data
+                                with model estimates from the Cox PH model.
+                            </li>
+                            <li>
+                                <strong>Kaplan–Meier Curve:</strong> A step-function survival estimate
+                                showing the proportion event-free over time.
+                            </li>
                         </ul>
                     </li>
-                    <li><strong>Download the output in your preferred format:</strong></li>
-                    <ul>
-                        <li><strong>Prospective Cohort:</strong> All generated profiles in CSV or VCF format.</li>
-                        <li><strong>Retrospective Cohort:</strong> Matched case-control pairs in CSV or VCF format.</li>
-                    </ul>
+                    <li>
+                        <strong>Download outputs:</strong>
+                        <ul>
+                            <li><strong>Prospective Cohort:</strong> All generated profiles (CSV or VCF).</li>
+                            <li><strong>Retrospective Cohort:</strong> Matched case–control pairs (CSV or VCF).</li>
+                        </ul>
+                    </li>
                 </ul>
-            </div>
+            </section>
 
-            <hr>
-            <h2>Methodology</h2>
+            <!-- Methodology -->
+            <h2 id="methodology">Methodology</h2>
 
-            <p>
-                <strong>Parameters:</strong>
-            <ul>
-                <li><strong>Country:</strong> An API request is made to the <a href="https://www.worldbank.org/" target="_blank">World Bank</a> to retrieve the list of countries with available demographic data.</li>
-            </ul>
-            <ul>
-                <li><strong>PGS ID:</strong> An API request is made to the <a href="https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores" target="_blank">PGS Catalog</a>. The corresponding score file is retrieved and fully parsed to extract variant identifiers, allele frequencies, and their associated effect sizes.</li>
-            </ul>
-            <ul>
-                <li><strong>Age of Entry:</strong> An API request is made to the <a href="https://www.worldbank.org/" target="_blank">World Bank</a> to retrieve the age distribution for the specified country. The distribution is separated by gender, and each age bin represents the percentage of the total population of that gender. This allows sampling within the selected age interval based on realistic demographic proportions.</li>
+            <section class="tutorial-step">
+                <h3 id="params">Parameters</h3>
                 <ul>
-                    <li><strong>Male and Female: </strong> For the selected age interval, the percentage distribution is used across age bins and normalize it so the values sum to 100%. These percentages are then multiplied by the total population of the selected gender to estimate the number of individuals in each age bin.</li>
-                    <li><strong>Both:</strong> The gender distribution percentages are used to split the total number of synthetic profiles between males and females. Then, for each gender, the age bin allocation follows the same methodology as described for a single gender.</li>
+                    <li>
+                        <strong>Country:</strong> Countries are retrieved from the
+                        <a href="https://www.worldbank.org/" target="_blank" rel="noopener">World Bank</a>
+                        to determine available demographic data.
+                    </li>
+                    <li>
+                        <strong>PGS ID:</strong> Score files are fetched from the
+                        <a href="https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores" target="_blank" rel="noopener">PGS Catalog</a>
+                        and parsed to extract variant IDs, allele frequencies, and effect sizes.
+                    </li>
+                    <li>
+                        <strong>Age of Entry:</strong> Age distributions (by sex) for the selected country are retrieved from the World Bank.
+                        Each age bin represents the proportion of the population and is used for realistic sampling.
+                        <ul>
+                            <li><strong>Male / Female:</strong> Percentages across bins are normalized to 100% and scaled by the selected sex’s population.</li>
+                            <li><strong>Both:</strong> The total number of profiles is split by the country’s sex distribution, then age bins are allocated per sex as above.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Follow-up Period:</strong> For each profile, a duration is sampled uniformly from the specified interval.
+                    </li>
                 </ul>
-            </ul>
-            <ul>
-                <li><strong>Follow-up Period:</strong> For each synthetic profile, a follow-up duration is sampled uniformly from the specified interval.</li>
-            </ul>
-            </p>
+            </section>
 
-            <div class="tutorial-step">
-                <h3>Prospective Cohort Generation:</h3>
-                <p>For a detailed explanation of how prospective cohorts are simulated using incidence rates, PGS data,
-                    and age-based risk models, please refer to
-                    <a href="https://observablehq.com/d/26478eba9074ea56" target="_blank">Prospective Cohort
-                        Methodology</a>.
-                </p>
-            </div>
-
-            <div class="tutorial-step">
-                <h3>Retrospective Cohort Generation:</h3>
+            <section class="tutorial-step">
+                <h3 id="prospective-method">Prospective Cohort Generation</h3>
                 <p>
-                    In retrospective simulation, we begin by generating a specified number of <em>cases</em> using synthetic
-                    profiles that have developed the disease within their follow-up period, according to their
-                    age, polygenic risk score, and population-specific incidence rate.
+                    For a detailed explanation of how prospective cohorts are simulated using incidence rates, PGS data,
+                    and age-based risk models, see
+                    <a href="https://observablehq.com/d/26478eba9074ea56" target="_blank" rel="noopener">
+                        Prospective Cohort Methodology
+                    </a>.
                 </p>
+            </section>
 
+            <section class="tutorial-step">
+                <h3 id="retrospective-method">Retrospective Cohort Generation</h3>
                 <p>
-                    Once the required number of cases is generated, each case is matched with one or more <em>controls</em>
-                    who did not develop the disease during the same follow-up interval. Matching is performed based on age
-                    at entry and gender to maintain comparability. Controls are drawn from the remaining pool of profiles.
+                    In retrospective simulation, the system first generates the requested number of <em>cases</em>—profiles
+                    that develop the disease within follow-up according to age, PRS, and population incidence.
                 </p>
-            </div>
+                <p>
+                    Each case is then matched with one or more <em>controls</em> who did not develop the disease during the same
+                    follow-up interval. Matching is based on age at entry and gender; controls are drawn from the remaining pool.
+                </p>
+            </section>
         </article>
-    </section>
-
-    <!-- Prospective Cohort Page -->
-    <section id="prospective" class="page active">
-        <div class="form">
-            <div class="input-group">
-                <div class="alert hidden" id="alert-profiles">Please enter a valid number of profiles.</div>
-                <label for="numberOfProfiles">Total Number of Profiles:</label>
-                <input type="number" id="numberOfProfiles" value="1000" min="100" max="10000">
-            </div>
-
-            <button id="prospectiveGenerate" class="button primary-button">
-                <i class="fas fa-rocket"></i> Generate Prospective Data
-            </button>
-        </div>
-    </section>
-
-    <!-- Retrospective Cohort Page -->
-    <section id="retrospective" class="page">
-        <div class="form">
-            <div class="input-group">
-                <div class="alert hidden" id="alert-cases">Please enter a valid number of cases</div>
-                <label for="numberOfCases">Total Number of Cases:</label>
-                <input type="number" id="numberOfCases" value="1000" min="100" max="10000">
-            </div>
-
-            <div class="input-group">
-                <div class="alert hidden" id="alert-controls">Please enter a valid number of controls per case</div>
-                <label for="controlsPerCase">Number of Controls per Case:</label>
-                <input type="number" id="controlsPerCase" value="1" min="1" max="50" step="1">
-            </div>
-
-            <button id="retrospectiveGenerate" class="button primary-button">
-                <i class="fas fa-brain"></i> Generate Case-Control Data
-            </button>
-        </div>
-    </section>
-
-    <!-- Results Section -->
-    <section id="results" class="results hidden">
-        <div id="prospectiveResults">
-                <div class="charts fade">
-                    <div class="chart-slide">
-                        <h2>Observed vs. Predicted Incidence Rates</h2>
-                        <canvas id="expectedIncidenceChartProspective"></canvas>
-                    </div>
-                </div>
-                <div class="charts fade">
-                    <div class="chart-slide">
-                        <h2>Kaplan-Meier curve for simulated breast cancer prospective cohort</h2>
-                        <div id="kaplanMeierCurve" class="kaplan-meier-container"></div>
-                    </div>
-                </div>
-                <div id="tooltip" style="position: absolute; opacity: 0; pointer-events: none; background: white; border: 1px solid #ccc; padding: 8px; border-radius: 4px; font-size: 14px;"></div>
-                <a class="prev" id="prevSlide">&#10094;</a>
-                <a class="next" id="nextSlide">&#10095;</a>
-            <div class="footer">
-                <button id="downloadProspective" class="button download-button">
-                    <i class="fas fa-download"></i> Export All Profiles As CSV
-                </button>
-                <button id="downloadProspectiveVCF" class="button download-button">
-                    <i class="fas fa-download"></i> Export All Profiles As VCF
-                </button>
-                <button id="reset" class="button download-button">
-                    <i class="fas fa-file-code"></i> New Cohort Simulation
-                </button>
-            </div>
-        </div>
-    </section>
-
-</main>
-<script type="module" src="main.js" defer></script>
+    </div>
 </body>
 </html>

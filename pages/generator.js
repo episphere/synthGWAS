@@ -1,6 +1,6 @@
-import { loadCountries, loadDependencies } from './utils/loadersUtils.js';
-import { initializeUI } from './ui/uiHandlers.js';
-import { initializeRouting, handleRouting } from './ui/routing.js';
+import { loadCountries, loadDependencies } from '../utils/loadersUtils.js';
+import { setupCohortGeneration } from '../ui/uiHandlers.js';
+import { setupInput } from '../syntheticDataGenerator.js';
 
 
 const dependencyUrls = [
@@ -10,26 +10,22 @@ const dependencyUrls = [
     'https://cdn.jsdelivr.net/npm/d3@7'
 ];
 
-
 // Initial configuration for inputs, files, etc.
 const config = {
-    incidenceRateFile: 'data/age_specific_breast_cancer_incidence_rates.csv',
-    globalIncidenceFile: 'data/incidence.csv', // future use
-    pgsModelFile: 'data/pgs_model_test.txt',
+    incidenceRateFile: '../data/breast-cancer/finland_breast_incidence_rate.csv',
+    globalIncidenceFile: '../data/breast-cancer/incidence.csv', // future use
+    pgsModelFile: '../data/breast-cancer/pgs_4_38.vcf',
     maxProfilesSlice: 100
 };
-
 
 /* global localforage */
 (async function main() {
     try {
         await loadDependencies(dependencyUrls);
-        //TODO: DEV LOCALFORAGE CLEAR
-        await localforage.clear();
-        initializeRouting(); // Initialize first
+        //await localforage.clear();
         await loadCountries();
-        initializeUI(config); // Then set up UI
-        window.addEventListener('popstate', handleRouting);
+        setupInput();
+        setupCohortGeneration(config);
     } catch (error) {
         console.error('Initialization failed:', error);
         alert(`Error: ${error.message}`);
