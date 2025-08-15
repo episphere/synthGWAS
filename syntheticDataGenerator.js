@@ -39,7 +39,10 @@ import {
     getCountrySnpFrequency,
     getRsIdsAndFrequency,
     getEnsemblFrequency,
-    setupInput
+    setupInput,
+    setupCohortGeneration,
+    loadCountries,
+    loadDependencies
 } from './index.js';
 
 export {
@@ -83,5 +86,8 @@ export {
     getCountrySnpFrequency,
     getRsIdsAndFrequency,
     getEnsemblFrequency,
-    setupInput
+    setupInput,
+    setupCohortGeneration,
+    loadCountries,
+    loadDependencies
 };

@@ -1,6 +1,4 @@
-import { loadCountries, loadDependencies } from '../utils/loadersUtils.js';
-import { setupCohortGeneration } from '../ui/uiHandlers.js';
-import { setupInput } from '../syntheticDataGenerator.js';
+import { loadCountries, loadDependencies, setupInput, setupCohortGeneration } from '../syntheticDataGenerator.js';
 
 
 const dependencyUrls = [
