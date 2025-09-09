@@ -15,6 +15,7 @@ async function handleDataGeneration(params, config) {
     const {
         isRetrospective = false,
         countryISO,
+        ancestry,
         gender = 'both',
         pgsIdInput,
         numberOfProfiles,
@@ -26,7 +27,6 @@ async function handleDataGeneration(params, config) {
     } = params;
     showLoading('spinner');
     showLoadingText('Modeling Hazard Rates...')
-    updateLoadingProgress(0);
 
     let snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b;
     const incidenceRateFile = config.incidenceRateFile;
@@ -34,9 +34,9 @@ async function handleDataGeneration(params, config) {
 
     try {
         ({ snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b } = await handleSnpsInfo(
-            pgsIdInput,
+            pgsModelFile,
+            ancestry,
             incidenceRateFile,
-            pgsModelFile
         ));
     } catch (error) {
         console.error('Failed to load SNPs info: ', error);
@@ -53,6 +53,7 @@ async function handleDataGeneration(params, config) {
 
     try {
         setTimeout(() => {
+            updateLoadingProgress(0);
             showLoading('bar');
             showLoadingText('Generating Synthetic Cohort...')
         }, 10);
@@ -76,7 +77,6 @@ async function handleDataGeneration(params, config) {
             config.chunkSize = Math.min(DEFAULT_CHUNK_SIZE, Number(numberOfProfiles));
             await handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile);
         }
-        console.log("HIDING LOADER")
         hideLoading();
 
         return { observedIncidenceRate, predictedIncidenceRate };
@@ -181,7 +181,7 @@ export function setupDownloadBtns() {
 export function setupInput() {
     try {
         document.getElementById('countrySelect').addEventListener('change', async (e) => {
-            const countryISO = e.target.value;
+            const countryISO = e.target.value.split(',')[0];
 
             if (countryISO) {
                 const ageData = await loadPopulation(countryISO);
@@ -189,15 +189,19 @@ export function setupInput() {
             }
         });
 
-        // TODO: Currently only the Female gender is allowed
-        // <option value="${GENDER.BOTH}" selected>Both</option>
-        //         <option value="${GENDER.MALE}">Male</option>
         document.getElementById('genderSelect').innerHTML = `
+            <option value="${GENDER.MALE}">Male</option>
             <option value="${GENDER.FEMALE}">Female</option>
+            <option value="${GENDER.BOTH}" selected>Both</option>
         `;
 
         document.getElementById('diseaseSelect').innerHTML = `
             <option value="${'PGS000004'}">Breast Cancer (PGS000004)</option>
+            <option value="${'PGS004908'}">Kidney Cancer (PGS004908)</option>
+            <option value="${'PGS000740'}">Lung Cancer (PGS000740)</option>
+            <option value="${'PGS002265'}">Colorectal Cancer (PGS002265)</option>
+            <option value="${'PGS003394'}">Epithelial Ovarian Cancer (PGS003394)</option>
+            <option value="${'PGS003765'}">Prostate Cancer (PGS003765)</option>
         `;
 
         const checkbox = document.getElementById('retrospectiveToggle');
@@ -240,7 +244,8 @@ function getParams(isRetrospective) {
     try {
         return {
             isRetrospective,
-            countryISO: document.getElementById('countrySelect').value.trim(),
+            countryISO: document.getElementById('countrySelect').value.trim().split(',')[0],
+            ancestry: document.getElementById('countrySelect').value.trim().split(',')[1],
             gender: document.getElementById('genderSelect').value.trim(),
             pgsIdInput: document.getElementById('diseaseSelect').value.trim(),
             numberOfProfiles: isRetrospective ? document.getElementById('numberOfCases').value.trim() : document.getElementById('numberOfProfiles').value.trim(),

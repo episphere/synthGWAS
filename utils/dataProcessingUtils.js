@@ -34,16 +34,18 @@ export function processPRS(snpsInfo) {
 }
 
 
-export async function processSnpData(snpData, build) {
+export async function processSnpData(snpData, ancestry) {
     // Validate and extract relevant indices from headers
     const { headers, values } = snpData;
     let indices = {
         hmChromosome: headers.indexOf('hm_chr'),
         hmPosition: headers.indexOf('hm_pos'),
         hmRsId: headers.indexOf('hm_rsID'),
+        hmOther: headers.indexOf('hm_inferOtherAllele'),
         effect: headers.indexOf('effect_allele'),
         other: headers.indexOf('other_allele'),
         weight: headers.indexOf('effect_weight'),
+        maf: headers.indexOf('allelefrequency_effect')
     }
 
     if (indices.hmChromosome === -1 || indices.hmPosition === -1 || indices.hmRsId === -1) {
@@ -51,15 +53,19 @@ export async function processSnpData(snpData, build) {
     }
 
     // Extract SNP data
-    let snpsInfo = values.map(row => ({
-        id: `${row[indices.hmChromosome]}:${row[indices.hmPosition]}:${row[indices.effect]}:${row[indices.other]}`,
-        rsID: row[indices.hmRsId],
-        weight: row[indices.weight],
-        maf: row[indices.maf]
-    }));
+    let snpsInfo = values.map(row => {
+        const other = row[indices.hmOther] !== "" ? row[indices.hmOther] : row[indices.other];
+
+        return {
+            id: `${row[indices.hmChromosome]}:${row[indices.hmPosition]}:${row[indices.effect]}:${other}`,
+            rsID: row[indices.hmRsId],
+            weight: row[indices.weight],
+            maf: row[indices.maf]
+        };
+    });
 
     // Add rsIDs and validate SNP data
-    snpsInfo = await getRsIdsAndFrequency(snpsInfo);
+    snpsInfo = await getRsIdsAndFrequency(snpsInfo, ancestry);
 
     if (!snpsInfo.length) {
         throw new Error('No valid SNPs processed. Check the input PGS file or SNP lookup results.');
@@ -159,6 +165,7 @@ export async function processProfiles(snpsInfo, numberOfProfiles, gender, minAge
             ...snpDosages
         ];
 
+        // STATS
         if (isCase === 1) {
             numberOfCases++;
             caseAvg += prs;

@@ -11,16 +11,14 @@ const dependencyUrls = [
 // Initial configuration for inputs, files, etc.
 const config = {
     incidenceRateFile: '../data/breast-cancer/finland_breast_incidence_rate.csv',
-    globalIncidenceFile: '../data/breast-cancer/incidence.csv', // future use
-    pgsModelFile: '../data/breast-cancer/pgs_4_38.vcf',
-    maxProfilesSlice: 100
+    pgsModelFile: '../data/breast-cancer/PGS004908.txt',
 };
 
 /* global localforage */
 (async function main() {
     try {
         await loadDependencies(dependencyUrls);
-        //await localforage.clear();
+        await localforage.clear();
         await loadCountries();
         setupInput();
         setupCohortGeneration(config);

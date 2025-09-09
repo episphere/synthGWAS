@@ -77,19 +77,22 @@ export async function loadCountries() {
             .filter(c => c.region && c.region.value !== 'Aggregates')
             .sort((a, b) => a.name.localeCompare(b.name));
 
-        const europeanAncestryCountries = [
-            'United States', 'Japan', 'Finland'
-        ];
-
+        const europeanAncestryCountries = {
+            "Nigeria": "AFR",
+            "China": "EAS",
+            "India": "SAS",
+            "United Kingdom": "EUR",
+            "Mexico": "AMR"
+        }
         const filteredCountries = realCountries.filter(country =>
-            europeanAncestryCountries.includes(country.name)
+            Object.keys(europeanAncestryCountries).includes(country.name)
         );
 
         // Populate select options
         filteredCountries.forEach(country => {
             const option = document.createElement('option');
-            option.value = country.id;  // ISO 3 code
-            option.textContent = country.name;
+            option.value = `${country.id},${europeanAncestryCountries[country.name]}`;  // ISO 3 code + Ancestry
+            option.textContent = `${country.name} (${europeanAncestryCountries[country.name]})`;
             countrySelect.appendChild(option);
         });
     } catch (err) {
@@ -100,7 +103,7 @@ export async function loadCountries() {
 
 
 export async function loadPopulation() {
-    const countryISO = document.getElementById('countrySelect').value;
+    const countryISO = document.getElementById('countrySelect').value.split(',')[0];
 
     try {
         const ageGroups = [
@@ -147,7 +150,6 @@ export async function loadPopulation() {
             // Each response has JSON structure: [metadata, dataArray]
             const feResponse = await results[feIndex].json();
             const maResponse = await results[maIndex].json();
-
             const feValue = feResponse[1][0]?.value ?? null;
             const maValue = maResponse[1][0]?.value ?? null;
 

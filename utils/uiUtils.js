@@ -6,11 +6,13 @@ export function displaySNP(snp) {
 
 export function updateLoadingProgress(percentage) {
     try {
-        const bar = document.getElementById('progressFill');
+        setTimeout(() => {
+            const bar = document.getElementById('progressFill');
 
-        if (bar) {
-            bar.style.width = `${percentage}%`;
-        }
+            if (bar) {
+                bar.style.width = `${percentage}%`;
+            }
+        }, 5);
     } catch (error) {
         console.error('HTML element not found: ', error);
     }

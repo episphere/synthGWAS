@@ -1,5 +1,8 @@
 import { INDEX } from '../constants.js';
-
+import {
+    hideLoading,
+    showLoading, showLoadingText
+} from '../syntheticDataGenerator.js';
 
 export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -209,58 +212,67 @@ export async function dataToVCF(info) {
 }
 
 
-export async function downloadCohortFromChunks({ prefix, filename, splitDataset, remapIds = true }) {
-    /* global localforage */
+export async function downloadCohortFromChunks({prefix, filename, splitDataset, remapIds = true, flushEvery = 50_000}) {
+    showLoading('spinner');
     const CASE_IDX = 5;
+    /* global localforage */
     const header = await localforage.getItem('header');
+    if (!header) throw new Error('Header missing');
 
-    if (!header) {
-        throw new Error('Header missing');
-    }
+    let parts = [header.join(',') + '\n'];
+    let casesParts = [header.join(',') + '\n'];
+    let controlsParts = [header.join(',') + '\n'];
+    let count = 0;
 
-    const parts = [header.join(',') + '\n'];
-    const casesParts = [header.join(',') + '\n'];
-    const controlsParts = [header.join(',') + '\n'];
+    const flush = (arr) => {
+        const blob = new Blob(arr, { type: 'text/csv' });
+        arr.length = 0; // clear array
+        return blob;
+    };
+
+    const blobs = [];
+    const caseBlobs = [];
+    const controlBlobs = [];
 
     for await (const profile of getCohort({ prefix, remapIds })) {
         const row = profile.join(',') + '\n';
         parts.push(row);
-
         if (splitDataset) {
-            if (profile[CASE_IDX] === 1) casesParts.push(row);
-            else controlsParts.push(row);
+            (profile[CASE_IDX] === 1 || profile[CASE_IDX] === '1' ? casesParts : controlsParts).push(row);
+        }
+        if (++count % flushEvery === 0) {
+            blobs.push(flush(parts));
+            if (splitDataset) {
+                caseBlobs.push(flush(casesParts));
+                controlBlobs.push(flush(controlsParts));
+            }
         }
     }
 
+    // final flush
+    if (parts.length) blobs.push(new Blob(parts, { type: 'text/csv' }));
+    const url = URL.createObjectURL(new Blob(blobs, { type: 'text/csv' }));
+    triggerDownload(url, filename);
+    URL.revokeObjectURL(url);
+
     if (splitDataset) {
-        const a = document.createElement('a');
-        const casesBlob = new Blob(casesParts, { type: 'text/csv' });
-        const casesUrl = URL.createObjectURL(casesBlob);
-
-        a.href = casesUrl;
-        a.download = 'cases.csv';
-        document.body.appendChild(a);
-        a.click();
+        if (casesParts.length) caseBlobs.push(new Blob(casesParts, { type: 'text/csv' }));
+        if (controlsParts.length) controlBlobs.push(new Blob(controlsParts, { type: 'text/csv' }));
+        const casesUrl = URL.createObjectURL(new Blob(caseBlobs, { type: 'text/csv' }));
+        const controlsUrl = URL.createObjectURL(new Blob(controlBlobs, { type: 'text/csv' }));
+        triggerDownload(casesUrl, 'cases.csv');
+        triggerDownload(controlsUrl, 'controls.csv');
         URL.revokeObjectURL(casesUrl);
-
-        const controlsBlob = new Blob(controlsParts, { type: 'text/csv' });
-        const controlsUrl = URL.createObjectURL(controlsBlob);
-
-        a.href = controlsUrl;
-        a.download = 'controls.csv';
-        a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(controlsUrl);
     }
 
-    const blob = new Blob(parts, { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    function triggerDownload(url, name) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    hideLoading();
 }

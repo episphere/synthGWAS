@@ -74,9 +74,8 @@ export async function getManyRsIds(snpList, concurrency = 15) {
 }
 
 
-export async function getEnsemblFrequency(rsID, ancestry='eur') {
-    const ancestries = ['afr', 'amr', 'eas', 'eur', 'sas']
-    const url = `https://rest.ensembl.org/variation/human/${rsID}?pops=1`;
+export async function getEnsemblFrequency(snpInfo, ancestry) {
+    const url = `https://rest.ensembl.org/variation/human/${snpInfo.rsID}?pops=1`;
     const response = await fetch(url, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json'}
     });
@@ -87,56 +86,44 @@ export async function getEnsemblFrequency(rsID, ancestry='eur') {
 
     if (!data.populations?.length) return;
 
-    // Normalize ancestry to lowercase once
-    const ancestryLC = ancestry.toLowerCase();
-
-    // Filter by matching ancestry prefix and suffix
     const matches = data.populations.filter(popInfo => {
         const [prefix, phase, suffix] = popInfo.population.split(':');
 
-        return prefix === '1000GENOMES' && suffix.toLowerCase() === ancestryLC;
+        return prefix === '1000GENOMES' && suffix !== undefined  && suffix === ancestry;
     });
 
-    // If nothing matches, stop
     if (!matches.length) return;
 
-    // If minor_allele is defined, look for it first
-    if (data.minor_allele) {
-        const match = matches.find(popInfo => popInfo.allele === data.minor_allele);
+    const otherInfo = matches.filter(match => {
+        const [chr, pos, effect, other] = snpInfo.id.split(':');
 
-        if (match) {
-            return match.frequency;
-        }
-    }
-    // If not found or no minor_allele defined, choose the allele with the lowest frequency
-    const lowest = matches.reduce((min, curr) => {
-        return parseFloat(curr.frequency) < parseFloat(min.frequency) ? curr : min;
-    });
+        return match.allele === effect;
+    })
 
-    return lowest.frequency;
+    if (!otherInfo) return
+
+    snpInfo.maf = parseFloat(otherInfo[0].frequency);
+
+    return snpInfo;
 }
 
 
-export async function getFrequencies(rsIds, concurrency=200) {
-    const results = [];
+export async function getFrequencies(snpsInfo, ancestry, concurrency=200) {
     let index = 0;
 
     async function next() {
-        if (index >= rsIds.length) return;
+        if (index >= snpsInfo.length) return;
 
         const currentIndex = index++;
 
-        if (rsIds[currentIndex] === null) {
-            results[currentIndex] = null;
-
-            return next(); // run next when done
+        if (snpsInfo[currentIndex] === null) {
+            return next();
         }
 
         try {
-            results[currentIndex] = await getEnsemblFrequency(rsIds[currentIndex]);
+            snpsInfo[currentIndex] = await getEnsemblFrequency(snpsInfo[currentIndex], ancestry);
         } catch (e) {
-            console.error(` ${rsIds[currentIndex]}:`, e);
-            results[currentIndex] = null;
+            console.error(` ${snpsInfo[currentIndex]}:`, e);
         }
 
         return next(); // run next when done
@@ -150,7 +137,7 @@ export async function getFrequencies(rsIds, concurrency=200) {
 
     await Promise.all(workers);
 
-    return results;
+    return snpsInfo;
 }
 
 
@@ -177,13 +164,7 @@ export async function getRsIdsAndFrequency(snpsInfo, ancestry) {
         });
     }
 
-    const frequencies = await getFrequencies(rsIdList, ancestry);
-
-    rsIdList.forEach((rsId, index) => {
-        if (frequencies[index]) {
-            snpsInfo[index].maf = frequencies[index];
-        }
-    });
+    snpsInfo = await getFrequencies(snpsInfo, ancestry);
 
     return snpsInfo;
 }
@@ -489,7 +470,7 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
 }
 
 
-export async function getSnpsInfo(pgsFile, build=38) {
+export async function getSnpsInfo(pgsFile, ancestry) {
     //const pgsModel = await loadScore(pgsId);
     //const parsedPgsModel = parseFile(pgsModel);
 
@@ -497,7 +478,7 @@ export async function getSnpsInfo(pgsFile, build=38) {
     const response = await fetch(pgsFile);
     const text = await response.text();
 
-    return await processSnpData(parseFile(text), build);
+    return await processSnpData(parseFile(text), ancestry);
 }
 
 

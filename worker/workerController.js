@@ -5,14 +5,14 @@ import {
 } from '../syntheticDataGenerator.js';
 
 
-export async function handleSnpsInfo(pgsIdInput, incidenceRateFile, pgsModelFile) {
+export async function handleSnpsInfo(pgsModelFile, ancestry, incidenceRateFile) {
     return new Promise((resolve, reject) => {
-        const snpWorker = new Worker('worker/snpsWorker.js');
+        const snpWorker = new Worker('worker/modelWorker.js');
 
         snpWorker.postMessage({
-            pgsId: pgsIdInput,
+            pgsModelFile,
+            ancestry,
             incidenceRateFile,
-            pgsModelFile
         });
 
         snpWorker.onmessage = (e) => {
@@ -35,92 +35,14 @@ export async function handleSnpsInfo(pgsIdInput, incidenceRateFile, pgsModelFile
 }
 
 
-function startWorkerPool(workerScript, tasks) {
-    return new Promise((resolve, reject) => {
-        const workerCount = 4;
-        const workers = Array(workerCount).fill(null);
-        let activeWorkers = 0;
-        let completedTasks = 0;
-        const totalTasks = tasks.length;
-        const progressMap = Array(workerCount).fill(0);
-
-        const updateOverallProgress = () => {
-
-        };
-
-        const finishProcessing = () => {
-            workers.forEach(worker => {
-                if (worker) worker.terminate();
-            });
-
-            resolve();
-        };
-
-        const processNextTask = (workerIndex) => {
-            if (tasks.length === 0) {
-                workers[workerIndex] = null;
-                activeWorkers--;
-
-                if (activeWorkers === 0 && completedTasks === totalTasks) finishProcessing();
-                return;
-            }
-
-            const task = tasks.shift();
-            const worker = new Worker(workerScript);
-            workers[workerIndex] = worker;
-
-            worker.postMessage({ workerId: workerIndex, ...task });
-
-            worker.onmessage = (e) => {
-                if (e.data.type === 'progress') {
-                    progressMap[workerIndex] = e.data.progress;
-                }
-                else if (e.data.type === 'complete') {
-                    worker.terminate();
-                    completedTasks++;
-                    processNextTask(workerIndex);
-                    updateLoadingProgress(totalTasks / completedTasks);
-
-                    if (completedTasks === totalTasks) finishProcessing();
-                }
-                else if (e.data.type === 'error') {
-                    console.error(`Worker ${workerIndex} error:`, e.data.error);
-                    worker.terminate();
-                    activeWorkers--;
-                    reject(new Error(`Worker ${workerIndex} error: ${e.data.error}`));
-                }
-            };
-
-            worker.onerror = (error) => {
-                console.error(`Worker ${workerIndex} error:`, error.message);
-                alert(`Error during data generation: ${error.message}`);
-                worker.terminate();
-                activeWorkers--;
-                reject(new Error(`Worker ${workerIndex} error: ${error.message}`));
-            };
-        };
-
-        for (let i = 0; i < workerCount; i++) {
-            if (tasks.length > 0) {
-                activeWorkers++;
-                processNextTask(i);
-            }
-        }
-
-        if (totalTasks === 0) {
-            resolve(); // Resolve immediately if no tasks
-        }
-    });
-}
-
-
 export async function handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile) {
     const {
         totalProfiles, minAge, maxAge, minFollowUp, maxFollowUp, populationData, gender
     } = config;
+
+    let start = performance.now();
     const selectedAgeGroups = getAgeGroupsBetween(minAge, maxAge, populationData.ageGenderPercentages);
     const profilesByAgeGroup = distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, populationData, gender, selectedAgeGroups);
-
     const tasks = [];
     let taskId = 0;
 
@@ -154,6 +76,8 @@ export async function handleProfileRetrieval(config, snpsInfo, k, b, incidenceRa
     });
 
     await startWorkerPool('worker/profilesWorker.js', tasks);
+    let end = performance.now();
+    console.log("test:", end-start)
 }
 
 
@@ -201,5 +125,82 @@ export async function handleCaseControlRetrieval(
         });
     });
 
+
     await startWorkerPool('worker/caseControlWorker.js', tasks);
 }
+
+
+function startWorkerPool(workerScript, tasks) {
+    return new Promise((resolve, reject) => {
+        const workerCount = 4;
+        const workers = Array(workerCount).fill(null);
+        let activeWorkers = 0;
+        let completedTasks = 0;
+        const totalTasks = tasks.length;
+        const progressMap = Array(workerCount).fill(0);
+        const finishProcessing = () => {
+            workers.forEach(worker => {
+                if (worker) worker.terminate();
+            });
+
+            resolve();
+        };
+
+        const processNextTask = (workerIndex) => {
+            if (tasks.length === 0) {
+                workers[workerIndex] = null;
+                activeWorkers--;
+
+                if (activeWorkers === 0 && completedTasks === totalTasks) finishProcessing();
+
+                return;
+            }
+
+            const task = tasks.shift();
+            const worker = new Worker(workerScript);
+            workers[workerIndex] = worker;
+
+            worker.postMessage({ workerId: workerIndex, ...task });
+
+            worker.onmessage = (e) => {
+                if (e.data.type === 'progress') {
+                    progressMap[workerIndex] = e.data.progress;
+                }
+                else if (e.data.type === 'complete') {
+                    worker.terminate();
+                    completedTasks++;
+                    processNextTask(workerIndex);
+                    updateLoadingProgress((completedTasks / totalTasks) * 100);
+
+                    if (completedTasks === totalTasks) finishProcessing();
+                }
+                else if (e.data.type === 'error') {
+                    console.error(`Worker ${workerIndex} error:`, e.data.error);
+                    worker.terminate();
+                    activeWorkers--;
+                    reject(new Error(`Worker ${workerIndex} error: ${e.data.error}`));
+                }
+            };
+
+            worker.onerror = (error) => {
+                console.error(`Worker ${workerIndex} error:`, error.message);
+                alert(`Error during data generation: ${error.message}`);
+                worker.terminate();
+                activeWorkers--;
+                reject(new Error(`Worker ${workerIndex} error: ${error.message}`));
+            };
+        };
+
+        for (let i = 0; i < workerCount; i++) {
+            if (tasks.length > 0) {
+                activeWorkers++;
+                processNextTask(i);
+            }
+        }
+
+        if (totalTasks === 0) {
+            resolve(); // Resolve immediately if no tasks
+        }
+    });
+}
+
