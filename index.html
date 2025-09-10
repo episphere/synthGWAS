@@ -32,46 +32,33 @@
 
             <!-- Step 1 -->
             <section class="tutorial-step">
-                <h3 id="step-1">1. Select Cohort Type</h3>
-                <p>
-                    Begin by choosing the type of cohort you want to simulate:
-                    <strong>Prospective</strong> or <strong>Retrospective</strong>.
-                </p>
-            </section>
-
-            <!-- Step 2 -->
-            <section class="tutorial-step">
-                <h3 id="step-2">2. Define Cohort Type Common Parameters</h3>
-                <p>Regardless of the chosen cohort type, configure the following:</p>
+                <h3 id="step-1">1. Define Population-Specific Parameters</h3>
+                <p>Begin by configuring the parameters of the cohort you want to simulate:</p>
                 <ul>
                     <li>
                         <strong>Country:</strong> Select the country whose age distribution will be used
-                        for generating study entry ages. <em>Current version supports USA only.</em>
+                        for generating study entry ages. <em>Current version supports China (EAS), India (SAS), Mexico (AMR), Nigeria (AFR), UK (EUR), .</em>
                     </li>
                     <li>
                         <strong>Gender:</strong> Choose Male, Female, or Both.
-                        <em>Current version supports Female only.</em>
-                    </li>
-                    <li>
-                        <strong>Disease:</strong> Choose a disease with an associated Polygenic Score identifier from the
-                        <a href="https://www.pgscatalog.org/" target="_blank" rel="noopener">PGS Catalog</a>,
-                        such as <code>PGS000004</code> (or simply <code>4</code>).
-                        <em>Current version supports Breast Cancer (PGS000004).</em>
                     </li>
                     <li>
                         <strong>Age of Entry Range:</strong> Set lower and upper bounds for entry age.
-                    </li>
-                    <li>
-                        <strong>Follow-up Interval:</strong> Set the minimum and maximum number of years
-                        each profile will be followed after study entry.
                     </li>
                 </ul>
             </section>
 
             <!-- Step 3 -->
             <section class="tutorial-step">
-                <h3 id="step-3">3. Cohort-Specific Settings</h3>
-                <p>Depending on the selected cohort type, specify the appropriate parameters:</p>
+                <h3 id="step-2">2. Define Cohort-Specific Parameters</h3>
+                <p>Depending on the cohort type to simulate, specify the appropriate parameters:</p>
+                <li>
+                    <strong>Disease:</strong> Choose a disease with an associated Polygenic Score identifier from the
+                    <a href="https://www.pgscatalog.org/" target="_blank" rel="noopener">PGS Catalog</a>,
+                    such as <code>PGS000004</code> (or simply <code>4</code>).
+                    <em>Current version supports Breast Cancer (PGS000004), Kidney Cancer (PGS004908), Lung Cancer (PGS000740), Colorectal Cancer (PGS002265), Epithelial Ovarian Cancer (PGS003394), Prostate Cancer (PGS003765).</em>
+                </li>
+
                 <ul>
                     <li>
                         <strong>Prospective Cohort</strong>
@@ -83,17 +70,27 @@
                         <strong>Retrospective Cohort</strong>
                         <ul>
                             <li><strong>Total Number of Profiles:</strong> Number of cases to generate.</li>
-                            <li>
-                                <strong>Number of Controls per Case:</strong> Integer number of controls matched to each case.
-                            </li>
                         </ul>
                     </li>
                 </ul>
-            </section>
 
-            <!-- Step 4 -->
+                <li>
+                    <strong>Follow-up Interval:</strong> Set the minimum and maximum number of years
+                    each profile will be followed after study entry.
+                </li>
+
+                <li>
+                    <strong>Create Retrospective Cohort:</strong> Toggle whether the simulated cohort should be <strong>Prospective</strong> or <strong>Retrospective</strong>.
+                </li>
+
+                <li>
+                    <strong>Number of Controls per Case:</strong> This parameter appears when <strong>Create Retrospective Cohort</strong> is enabled and specifies the integer number of controls to be matched to each case defined in <strong>Total Number of Profiles</strong>.
+                </li>
+
+            </section>
+            <!-- Step 3 -->
             <section class="tutorial-step">
-                <h3 id="step-4">4. Generate Data</h3>
+                <h3 id="step-3">3. Generate Data</h3>
                 <p>
                     Click <strong>Generate Data</strong> to begin the synthetic data generation process.
                     This may take a few moments depending on dataset size.
