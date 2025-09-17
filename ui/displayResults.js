@@ -341,10 +341,14 @@ export async function renderIncidenceChart(observedIncidenceRate, predictedIncid
                 }
             },
             scales: {
-                x: { title: { display: true, text: 'Age →' } },
+                x: {
+                    title: { display: true, text: 'Age →' }
+                },
                 y: {
                     title: { display: true, text: '↑ Incidence Rate' },
-                    beginAtZero: true
+                    beginAtZero: true,
+                    min: 0,
+                    max: 0.01
                 }
             }
         }

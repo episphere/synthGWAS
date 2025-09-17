@@ -20,8 +20,8 @@ self.onmessage = async (e) => {
         const trainingLP = processPRS(snpsInfo);
         const [k, b] = estimateWeibullParameters(empiricalCdf(observedIncidenceRate), trainingLP);
         const exp_b = Math.exp(b);
+        console.log(k,exp_b)
         //const [k, exp_b] = [3.6751234798345402, 2.256356405011471e-8]
-        //2.615828191879541 0.000001158081449852286
         const predictedIncidenceRate = generateWeibullIncidenceCurve(k, exp_b, trainingLP, observedIncidenceRate.length);
 
         await localforage.setItem('header', header);

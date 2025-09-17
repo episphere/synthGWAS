@@ -5,17 +5,17 @@ import { INDEX } from '../constants.js';
 
 
 function matchAlleles(ensemblAlleles, effect, other) {
-    // Normalize: remove dashes, upper case, etc.
     const norm = (allele) => allele?.replace(/-/g, '').toUpperCase();
     const normEffect = norm(effect);
     const normOther = norm(other);
     const normalizedAlleles = ensemblAlleles.map(norm);
 
     return (
-        normalizedAlleles.includes(normEffect) |
+        normalizedAlleles.includes(normEffect) &&
         normalizedAlleles.includes(normOther)
     );
 }
+
 
 export async function getRsId(variantPosition) {
     const [chromosome, position, effect, other] = variantPosition.split(':');
@@ -37,11 +37,15 @@ export async function getRsId(variantPosition) {
 
     const matches = rsInfo.filter(result => {
         if (!Array.isArray(result.alleles)) return false;
+
         return matchAlleles(result.alleles, effect, other);
     });
 
-    return rsInfo[0].id;
+    if (!matches.length) return;
+
+    return matches[0].id;
 }
+
 
 export async function getManyRsIds(snpList, concurrency = 15) {
     const results = [];
@@ -84,7 +88,7 @@ export async function getEnsemblFrequency(snpInfo, ancestry) {
 
     const data = await response.json();
 
-    if (!data.populations?.length) return;
+    if (!data.populations?.length) return snpInfo;
 
     const matches = data.populations.filter(popInfo => {
         const [prefix, phase, suffix] = popInfo.population.split(':');
@@ -100,9 +104,7 @@ export async function getEnsemblFrequency(snpInfo, ancestry) {
         return match.allele === effect;
     })
 
-    if (!otherInfo) return
-
-    snpInfo.maf = parseFloat(otherInfo[0].frequency);
+    if (otherInfo.length > 0) snpInfo.maf = parseFloat(otherInfo[0].frequency);
 
     return snpInfo;
 }
@@ -121,9 +123,13 @@ export async function getFrequencies(snpsInfo, ancestry, concurrency=200) {
         }
 
         try {
-            snpsInfo[currentIndex] = await getEnsemblFrequency(snpsInfo[currentIndex], ancestry);
+            const ensemblFreq = await getEnsemblFrequency(snpsInfo[currentIndex], ancestry);
+
+            if (!ensemblFreq) return next();
+
+            snpsInfo[currentIndex] = ensemblFreq;
         } catch (e) {
-            console.error(` ${snpsInfo[currentIndex]}:`, e);
+            console.warn(` ${snpsInfo[currentIndex]}:`, e);
         }
 
         return next(); // run next when done
@@ -417,6 +423,7 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
     const modelCdfBuffer = new Float64Array(ages.length);
     const agePowers = new Float64Array(ages.length);
     const expTerms = new Float64Array(linearPredictors.length);
+    console.log(linearPredictors)
 
     function modelCdf(k, b) {
         for (let i = 0; i < ages.length; i++) {
@@ -435,6 +442,7 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
 
             modelCdfBuffer[i] = 1 - (sumSurvival / linearPredictors.length);
         }
+
         return modelCdfBuffer;
     }
 
@@ -453,9 +461,9 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
         return rmse(modelCdf(k, b), empCdf); // Pass only k/b
     };
 
-    let initialGuess = [1, 1]; // Initial guess for k and b
+    let initialGuess = [1.5, 1.1]; // Initial guess for k and b
     let params = nelderMead(rmse_weibull, initialGuess, {
-        maxIterations: 500,
+        maxIterations: 1500,
         minErrorDelta: 1e-9,
         minTolerance: 1e-8,
         rho: 1.2,
@@ -471,10 +479,6 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
 
 
 export async function getSnpsInfo(pgsFile, ancestry) {
-    //const pgsModel = await loadScore(pgsId);
-    //const parsedPgsModel = parseFile(pgsModel);
-
-    // Test
     const response = await fetch(pgsFile);
     const text = await response.text();
 

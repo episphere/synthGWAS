@@ -30,6 +30,10 @@ export function processPRS(snpsInfo) {
         linearPredictors.push(prs);
     }
 
+    const max = linearPredictors.reduce((a, b) => Math.max(a, b), -Infinity);
+
+    linearPredictors = linearPredictors.map(pred => pred / max);
+
     return Float64Array.from(linearPredictors);
 }
 
@@ -41,6 +45,7 @@ export async function processSnpData(snpData, ancestry) {
         hmChromosome: headers.indexOf('hm_chr'),
         hmPosition: headers.indexOf('hm_pos'),
         hmRsId: headers.indexOf('hm_rsID'),
+        rsId: headers.indexOf('rsID'),
         hmOther: headers.indexOf('hm_inferOtherAllele'),
         effect: headers.indexOf('effect_allele'),
         other: headers.indexOf('other_allele'),
@@ -54,13 +59,15 @@ export async function processSnpData(snpData, ancestry) {
 
     // Extract SNP data
     let snpsInfo = values.map(row => {
-        const other = row[indices.hmOther] !== "" ? row[indices.hmOther] : row[indices.other];
+        const other = row[indices.hmOther] === "" ? row[indices.hmOther] : row[indices.other];
+        const id = `${row[indices.hmChromosome]}:${row[indices.hmPosition]}:${row[indices.effect]}:${other}`;
+        const rsID = row[indices.hmRsId] === "" ? row[indices.rsId] === "" ? null : row[indices.rsId] : row[indices.hmRsId];
 
         return {
-            id: `${row[indices.hmChromosome]}:${row[indices.hmPosition]}:${row[indices.effect]}:${other}`,
-            rsID: row[indices.hmRsId],
+            id: id,
+            rsID: rsID,
             weight: row[indices.weight],
-            maf: row[indices.maf]
+            maf: parseFloat(row[indices.maf])
         };
     });
 
@@ -72,12 +79,12 @@ export async function processSnpData(snpData, ancestry) {
     }
 
     // Calculate allele dosage frequencies for SNPs with valid rsIDs
+    console.log(snpsInfo);
     snpsInfo.forEach(snp => {
+        console.log(snp);
         if (!snp.rsID) {
             // TODO: Currently RS Id is not used, so this warning is turned off
-            //console.warn('Missing SNP ID for:', snp);
-
-            snp.rsID = snp.id;
+            console.warn('Missing SNP ID for:', snp);
         }
     });
 
@@ -220,7 +227,7 @@ export function getAgeGroupsBetween(minAge, maxAge, populationAgePercentages) {
         .map(({ group }) => group);
 }
 
-export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, populationData, gender = GENDER.BOTH, selectedAgeGroups) {
+export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, populationData, gender = GENDER.MALE, selectedAgeGroups) {
     const profilesByAgeGroup = { [GENDER.MALE]: {}, [GENDER.FEMALE]: {} };
 
     // Compute total population by gender
@@ -270,24 +277,4 @@ export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, pop
 
         return profilesByAgeGroup;
     }
-
-    if (gender === GENDER.BOTH) {
-        const totalPopulation = totalFemalePopulation + totalMalePopulation;
-        const femaleRatio = totalFemalePopulation / totalPopulation;
-        const maleRatio = totalMalePopulation / totalPopulation;
-        const femaleProfiles = Math.round(totalProfiles * femaleRatio);
-        const maleProfiles = totalProfiles - femaleProfiles;
-        const femaleDist = distributeProfilesByAgeGroups(femaleProfiles, minAge, maxAge, populationData, GENDER.FEMALE, selectedAgeGroups);
-        const maleDist = distributeProfilesByAgeGroups(maleProfiles, minAge, maxAge, populationData, GENDER.MALE, selectedAgeGroups);
-
-        // Merge female and male distributions
-        selectedAgeGroups.forEach(group => {
-            profilesByAgeGroup[GENDER.FEMALE][group] = femaleDist[GENDER.FEMALE][group] || 0;
-            profilesByAgeGroup[GENDER.MALE][group] = maleDist[GENDER.MALE][group] || 0;
-        });
-
-        return profilesByAgeGroup;
-    }
-
-    throw new Error(`Invalid gender: ${gender}`);
 }

@@ -41,6 +41,7 @@ export function weightedSum(ret, w1, v1, w2, v2) {
 }
 
 export function empiricalCdf(incidenceRates) {
+    console.log("EMPI", incidenceRates)
     let cumulativeHazard = 0;
 
     const cdfArray = incidenceRates.map((ageRate) => {
@@ -51,6 +52,7 @@ export function empiricalCdf(incidenceRates) {
         return { age: ageRate.age, cdf };
     });
 
+    console.log(cdfArray)
     return cdfArray;
 }
 

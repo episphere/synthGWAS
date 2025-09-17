@@ -81,7 +81,7 @@ export async function loadCountries() {
             "Nigeria": "AFR",
             "China": "EAS",
             "India": "SAS",
-            "United Kingdom": "EUR",
+            "Netherlands": "EUR",
             "Mexico": "AMR"
         }
         const filteredCountries = realCountries.filter(country =>

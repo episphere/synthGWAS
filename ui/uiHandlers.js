@@ -16,7 +16,7 @@ async function handleDataGeneration(params, config) {
         isRetrospective = false,
         countryISO,
         ancestry,
-        gender = 'both',
+        gender = 'male',
         pgsIdInput,
         numberOfProfiles,
         minAge,
@@ -29,15 +29,19 @@ async function handleDataGeneration(params, config) {
     showLoadingText('Modeling Hazard Rates...')
 
     let snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b;
-    const incidenceRateFile = config.incidenceRateFile;
-    const pgsModelFile = config.pgsModelFile
+    const disease = pgsIdInput;
+    const incidenceRateFile = `../data/incidence-rate/${countryISO.toLowerCase()}/${disease}_${gender}_${countryISO.toLowerCase()}.csv`;
+    const pgsModelFile = `../data/disease/${disease}.txt`;
 
     try {
+        let start = performance.now();
         ({ snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b } = await handleSnpsInfo(
             pgsModelFile,
             ancestry,
             incidenceRateFile,
         ));
+        let end = performance.now();
+        console.log("SNPS INFO PROCESSING:", end-start)
     } catch (error) {
         console.error('Failed to load SNPs info: ', error);
         alert('Error loading SNPs information, please reload the page and try again');
@@ -192,15 +196,14 @@ export function setupInput() {
         document.getElementById('genderSelect').innerHTML = `
             <option value="${GENDER.MALE}">Male</option>
             <option value="${GENDER.FEMALE}">Female</option>
-            <option value="${GENDER.BOTH}" selected>Both</option>
         `;
 
         document.getElementById('diseaseSelect').innerHTML = `
             <option value="${'PGS000004'}">Breast Cancer (PGS000004)</option>
-            <option value="${'PGS004908'}">Kidney Cancer (PGS004908)</option>
-            <option value="${'PGS000740'}">Lung Cancer (PGS000740)</option>
             <option value="${'PGS002265'}">Colorectal Cancer (PGS002265)</option>
             <option value="${'PGS003394'}">Epithelial Ovarian Cancer (PGS003394)</option>
+            <option value="${'PGS004908'}">Kidney Cancer (PGS004908)</option>
+            <option value="${'PGS000740'}">Lung Cancer (PGS000740)</option>
             <option value="${'PGS003765'}">Prostate Cancer (PGS003765)</option>
         `;
 
@@ -217,7 +220,7 @@ export function setupInput() {
 }
 
 
-export function setupCohortGeneration(config) {
+export async function setupCohortGeneration() {
     const generateBtn = document.getElementById('generateZone');
 
     try {
@@ -231,7 +234,7 @@ export function setupCohortGeneration(config) {
                 return;
             }
 
-            await generateAndDisplay(params, config);
+            await generateAndDisplay(params);
         });
     }
     catch (error) {
@@ -315,13 +318,13 @@ function validateParams(params) {
 }
 
 
-async function generateAndDisplay(params, config) {
+async function generateAndDisplay(params) {
     try {
-        const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params, config);
+        const { observedIncidenceRate, predictedIncidenceRate } = await handleDataGeneration(params);
 
         await localforage.setItem('observedIncidenceRate', observedIncidenceRate);
         await localforage.setItem('predictedIncidenceRate', predictedIncidenceRate);
-        window.location.href = 'results.html';
+        //window.location.href = 'results.html';
     } catch (error) {
         console.error('Error generating cohort:', error);
         alert('Failed to generate cohort. Please check your input or try again.');

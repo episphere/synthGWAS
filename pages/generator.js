@@ -8,12 +8,6 @@ const dependencyUrls = [
     'https://cdn.jsdelivr.net/npm/d3@7'
 ];
 
-// Initial configuration for inputs, files, etc.
-const config = {
-    incidenceRateFile: '../data/breast-cancer/finland_breast_incidence_rate.csv',
-    pgsModelFile: '../data/breast-cancer/PGS004908.txt',
-};
-
 /* global localforage */
 (async function main() {
     try {
@@ -21,7 +15,7 @@ const config = {
         await localforage.clear();
         await loadCountries();
         setupInput();
-        setupCohortGeneration(config);
+        await setupCohortGeneration();
     } catch (error) {
         console.error('Initialization failed:', error);
         alert(`Error: ${error.message}`);

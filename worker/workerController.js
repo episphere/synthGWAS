@@ -35,7 +35,7 @@ export async function handleSnpsInfo(pgsModelFile, ancestry, incidenceRateFile) 
 }
 
 
-export async function handleProfileRetrieval(config, snpsInfo, k, b, incidenceRateFile, pgsModelFile) {
+export async function handleProfileRetrieval(config, snpsInfo, k, b) {
     const {
         totalProfiles, minAge, maxAge, minFollowUp, maxFollowUp, populationData, gender
     } = config;
