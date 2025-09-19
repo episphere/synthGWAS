@@ -77,7 +77,7 @@ export async function handleProfileRetrieval(config, snpsInfo, k, b) {
 
     await startWorkerPool('worker/profilesWorker.js', tasks);
     let end = performance.now();
-    console.log("test:", end-start)
+    console.log("GENERATION:", end-start)
 }
 
 

@@ -79,9 +79,7 @@ export async function processSnpData(snpData, ancestry) {
     }
 
     // Calculate allele dosage frequencies for SNPs with valid rsIDs
-    console.log(snpsInfo);
     snpsInfo.forEach(snp => {
-        console.log(snp);
         if (!snp.rsID) {
             // TODO: Currently RS Id is not used, so this warning is turned off
             console.warn('Missing SNP ID for:', snp);

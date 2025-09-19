@@ -34,14 +34,11 @@ async function handleDataGeneration(params, config) {
     const pgsModelFile = `../data/disease/${disease}.txt`;
 
     try {
-        let start = performance.now();
         ({ snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b } = await handleSnpsInfo(
             pgsModelFile,
             ancestry,
             incidenceRateFile,
         ));
-        let end = performance.now();
-        console.log("SNPS INFO PROCESSING:", end-start)
     } catch (error) {
         console.error('Failed to load SNPs info: ', error);
         alert('Error loading SNPs information, please reload the page and try again');

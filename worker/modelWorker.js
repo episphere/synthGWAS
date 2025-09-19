@@ -14,7 +14,18 @@ self.onmessage = async (e) => {
         const {
             parseCsv, getSnpsInfo, processHeader, processPRS, generateWeibullIncidenceCurve, estimateWeibullParameters, empiricalCdf, getCountrySnpFrequency
         } = await import('../syntheticDataGenerator.js');
+
+        const start = performance.now()
         const snpsInfo = await getSnpsInfo(pgsModelFile, ancestry);
+
+        let count = 0;
+        const test = snpsInfo.forEach(snp=>{
+            if (!snp.rsID) count++
+        })
+        console.log("COUNT", count)
+
+        const end = performance.now()
+        console.log("SNPS INFO: ", end-start)
         const header = await processHeader(snpsInfo);
         const observedIncidenceRate = await parseCsv(incidenceRateFile, { delimiter: ',' });
         const trainingLP = processPRS(snpsInfo);
