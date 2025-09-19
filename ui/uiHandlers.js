@@ -321,7 +321,7 @@ async function generateAndDisplay(params) {
 
         await localforage.setItem('observedIncidenceRate', observedIncidenceRate);
         await localforage.setItem('predictedIncidenceRate', predictedIncidenceRate);
-        //window.location.href = 'results.html';
+        window.location.href = 'results.html';
     } catch (error) {
         console.error('Error generating cohort:', error);
         alert('Failed to generate cohort. Please check your input or try again.');
