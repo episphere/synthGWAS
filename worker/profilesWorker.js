@@ -4,7 +4,7 @@ self.onmessage = async (e) => {
         snpsInfo,
         totalProfiles,
         chunkSize,
-        gender,
+        sex,
         minAge,
         maxAge,
         minFollow,
@@ -30,7 +30,7 @@ self.onmessage = async (e) => {
             const profiles = await processProfiles(
                 snpsInfo,
                 currentChunkSize,
-                gender,
+                sex,
                 minAge,
                 maxAge,
                 minFollow,

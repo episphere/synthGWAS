@@ -63,7 +63,7 @@ export async function getManyRsIds(snpList, concurrency = 15) {
             results[currentIndex] = null;
         }
 
-        return next(); // run next when done
+        return next();
     }
 
     // Start the initial pool
@@ -418,6 +418,8 @@ export async function generateKaplanMeierData(cohort) {
 
 
 export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
+    let start = performance.now();
+
     let ages = new Float64Array(empiricalCdf.map((x) => x.age));
     let empCdf = new Float64Array(empiricalCdf.map((x) => x.cdf));
     const modelCdfBuffer = new Float64Array(ages.length);
@@ -474,6 +476,8 @@ export function estimateWeibullParameters(empiricalCdf, linearPredictors) {
     console.log('Fitted parameters (k, b):', params.x[0], Math.exp(params.x[1]));
     console.log('Error: ', params.fx)
 
+    let end = performance.now();
+    console.log("NELDER MEAD: ", end-start)
     return params.x;
 }
 
@@ -495,12 +499,12 @@ export function matchCasesControls(cases, controls, controlsPerCase = 1) {
 
     for (let caseIndividual of cases) {
         const caseAgeOfOnset = caseIndividual[INDEX.ONSET];
-        const caseGender = caseIndividual[INDEX.GENDER];
+        const caseSex = caseIndividual[INDEX.SEX];
         const matchedControls = [];
 
         // Try to find `baseControls` number of matches
         for (let j = 0; j < baseControls; j++) {
-            const matchIndex = unusedControls.findIndex(p => p[INDEX.ENTRY] === caseAgeOfOnset && p[INDEX.GENDER] === caseGender);
+            const matchIndex = unusedControls.findIndex(p => p[INDEX.ENTRY] === caseAgeOfOnset && p[INDEX.SEX] === caseSex);
 
             if (matchIndex === -1) break;
 

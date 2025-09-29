@@ -1,22 +1,22 @@
 import {
     handleCaseControlRetrieval,
     handleProfileRetrieval,
-    handleSnpsInfo,
+    handleModelSetup,
     downloadVcfFromChunks,
     downloadCohortFromChunks,
     loadPopulation, showAlert, hideAlert, updateLoadingProgress,
     showLoading, showLoadingText, hideLoading, getCountrySnpFrequency
 } from '../syntheticDataGenerator.js';
-import { GENDER, DEFAULT_CHUNK_SIZE } from '../constants.js';
+import { SEX, DEFAULT_CHUNK_SIZE } from '../constants.js';
 
 
 /* global localforage */
-async function handleDataGeneration(params, config) {
+async function handleDataGeneration(params) {
     const {
         isRetrospective = false,
         countryISO,
         ancestry,
-        gender = 'male',
+        sex = 'male',
         pgsIdInput,
         numberOfProfiles,
         minAge,
@@ -30,11 +30,16 @@ async function handleDataGeneration(params, config) {
 
     let snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b;
     const disease = pgsIdInput;
-    const incidenceRateFile = `../data/incidence-rate/${countryISO.toLowerCase()}/${disease}_${gender}_${countryISO.toLowerCase()}.csv`;
+    let incidenceRateFile = `../data/incidence-rate/${countryISO.toLowerCase()}/${disease}_${sex}_${countryISO.toLowerCase()}.csv`;
+
+    if (countryISO.toLowerCase() === "usa") {
+        incidenceRateFile = `../data/incidence-rate/${countryISO.toLowerCase()}/${ancestry.toLowerCase()}/${disease}_${sex}_${countryISO.toLowerCase()}.csv`;
+    }
+
     const pgsModelFile = `../data/disease/${disease}.txt`;
 
     try {
-        ({ snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b } = await handleSnpsInfo(
+        ({ snpsInfo, observedIncidenceRate, predictedIncidenceRate, k, b } = await handleModelSetup(
             pgsModelFile,
             ancestry,
             incidenceRateFile,
@@ -67,7 +72,7 @@ async function handleDataGeneration(params, config) {
             minFollowUp: Number(minFollowUp),
             maxFollowUp: Number(maxFollowUp),
             populationData: populationData,
-            gender: GENDER.FEMALE//TODO: gender
+            sex: SEX.FEMALE //TODO: sex
         };
 
         if (isRetrospective) {
@@ -190,14 +195,14 @@ export function setupInput() {
             }
         });
 
-        document.getElementById('genderSelect').innerHTML = `
-            <option value="${GENDER.MALE}">Male</option>
-            <option value="${GENDER.FEMALE}">Female</option>
+        document.getElementById('sexSelect').innerHTML = `
+            <option value="${SEX.MALE}">Male</option>
+            <option value="${SEX.FEMALE}">Female</option>
         `;
 
+        //<option value="${'PGS002265'}">Colorectal Cancer (PGS002265)</option>
         document.getElementById('diseaseSelect').innerHTML = `
             <option value="${'PGS000004'}">Breast Cancer (PGS000004)</option>
-            <option value="${'PGS002265'}">Colorectal Cancer (PGS002265)</option>
             <option value="${'PGS003394'}">Epithelial Ovarian Cancer (PGS003394)</option>
             <option value="${'PGS004908'}">Kidney Cancer (PGS004908)</option>
             <option value="${'PGS000740'}">Lung Cancer (PGS000740)</option>
@@ -210,8 +215,7 @@ export function setupInput() {
         checkbox.addEventListener('change', () => {
             advancedSection.style.display = checkbox.checked ? 'block' : 'none';
         });
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Error setting input parameters: ', error);
     }
 }
@@ -223,7 +227,7 @@ export async function setupCohortGeneration() {
     try {
         generateBtn.style.display = 'flex';
         generateBtn.addEventListener('click', async () => {
-            const params = getParams(false);
+            const params = getParams();
 
             if (!validateParams(params)) {
                 console.warn("Some parameters are missing");
@@ -240,15 +244,15 @@ export async function setupCohortGeneration() {
 }
 
 
-function getParams(isRetrospective) {
+function getParams() {
     try {
         return {
-            isRetrospective,
+            isRetrospective: document.getElementById('retrospectiveToggle').checked,
             countryISO: document.getElementById('countrySelect').value.trim().split(',')[0],
             ancestry: document.getElementById('countrySelect').value.trim().split(',')[1],
-            gender: document.getElementById('genderSelect').value.trim(),
+            sex: document.getElementById('sexSelect').value.trim(),
             pgsIdInput: document.getElementById('diseaseSelect').value.trim(),
-            numberOfProfiles: isRetrospective ? document.getElementById('numberOfCases').value.trim() : document.getElementById('numberOfProfiles').value.trim(),
+            numberOfProfiles: document.getElementById('numberOfProfiles').value.trim(),
             minAge: document.getElementById('minAge').value.trim(),
             maxAge: document.getElementById('maxAge').value.trim(),
             minFollowUp: document.getElementById('minFollowUp').value.trim(),
@@ -321,7 +325,7 @@ async function generateAndDisplay(params) {
 
         await localforage.setItem('observedIncidenceRate', observedIncidenceRate);
         await localforage.setItem('predictedIncidenceRate', predictedIncidenceRate);
-        window.location.href = 'results.html';
+        //window.location.href = 'results.html';
     } catch (error) {
         console.error('Error generating cohort:', error);
         alert('Failed to generate cohort. Please check your input or try again.');

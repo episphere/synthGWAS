@@ -1,8 +1,8 @@
 import { httpRequest } from './httpUtils.js';
-import { GENDER } from '../constants.js';
+import { SEX } from '../constants.js';
 
 
-export async function loadScript(url) {
+async function loadScript(url) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = url;
@@ -59,11 +59,8 @@ export async function loadCountries() {
         const response = await httpRequest('https://api.worldbank.org/v2/country?format=json&per_page=300');
         const data = await response.json();
         const countries = data[1];
-
-        // TODO: There is only 1 country in v1.0
-        countrySelect.innerHTML = '';
-
         const placeholder = document.createElement('option');
+
         placeholder.value = '';
         placeholder.textContent = 'Select a country';
         placeholder.disabled = true;
@@ -71,29 +68,33 @@ export async function loadCountries() {
         placeholder.hidden = true;
         countrySelect.appendChild(placeholder);
 
-        // Filter out aggregates and sort alphabetically
-        // TODO: Currently only EUA is allowed
         let realCountries = countries
             .filter(c => c.region && c.region.value !== 'Aggregates')
             .sort((a, b) => a.name.localeCompare(b.name));
+        const ancestryVariants = new Map([
+            ["Zimbabwe", [{ ancestry: "AFR" }]],
+            ["China", [{ ancestry: "EAS" }]],
+            ["India", [{ ancestry: "SAS" }]],
+            ["Portugal", [{ ancestry: "EUR" }]],
+            ["Spain", [{ ancestry: "EUR" }]],
+            ["United States", [{ ancestry: "EUR" }, { ancestry: "AMR" },
+            ]],
+        ]);
+        const filteredCountries = realCountries.filter(c => ancestryVariants.has(c.name));
 
-        const europeanAncestryCountries = {
-            "Nigeria": "AFR",
-            "China": "EAS",
-            "India": "SAS",
-            "Netherlands": "EUR",
-            "Mexico": "AMR"
-        }
-        const filteredCountries = realCountries.filter(country =>
-            Object.keys(europeanAncestryCountries).includes(country.name)
-        );
-
-        // Populate select options
         filteredCountries.forEach(country => {
-            const option = document.createElement('option');
-            option.value = `${country.id},${europeanAncestryCountries[country.name]}`;  // ISO 3 code + Ancestry
-            option.textContent = `${country.name} (${europeanAncestryCountries[country.name]})`;
-            countrySelect.appendChild(option);
+            const variants = ancestryVariants.get(country.name);
+
+            variants.forEach(variant => {
+                const option = document.createElement('option');
+
+                // Value encodes: ISO3 | subgroup | ancestry
+                option.value = `${country.id},${variant.ancestry}`;
+
+                // Label shown to the user
+                option.textContent = variant.label || `${country.name} (${variant.ancestry})`;
+                countrySelect.appendChild(option);
+            });
         });
     } catch (err) {
         console.error('Failed to load countries', err);
@@ -113,36 +114,34 @@ export async function loadPopulation() {
             '7579'
         ];
 
-        const genders = ['FE', 'MA'];
+        const sexes = ['FE', 'MA'];
         const promises = [];
 
         for (const age of ageGroups) {
-            for (const gender of genders) {
-                const indicator = `SP.POP.${age}.${gender}.5Y`;
+            for (const sex of sexes) {
+                const indicator = `SP.POP.${age}.${sex}.5Y`;
                 promises.push(httpRequest(`https://api.worldbank.org/v2/country/${countryISO}/indicator/${indicator}?date=2023&format=json`));
             }
         }
 
-        // Total female population
+        // Total population
         promises.push(httpRequest(`https://api.worldbank.org/v2/country/${countryISO}/indicator/SP.POP.TOTL.FE.IN?date=2023&format=json`));
-        // Total male population
         promises.push(httpRequest(`https://api.worldbank.org/v2/country/${countryISO}/indicator/SP.POP.TOTL.MA.IN?date=2023&format=json`));
 
-        // Wait all responses
         /** @type {Response[]} */
         const results = await Promise.all(promises);
 
         // Now process results:
-        // The order of results is: for each ageGroup * each gender, then total male, total female, total population
+        // The order of results is: for each ageGroup * each sex, then total male, total female, total population
         const populationData = {
-            ageGenderPercentages: {},  // { '0004': { FE: %, MA: % }, ... }
+            ageSexPercentages: {},  // { '0004': { FE: %, MA: % }, ... }
             totalFemalePopulation: 0,
             totalMalePopulation: 0
         };
 
-        // Process age-gender percentages:
+        // Process age-sex percentages:
         const ageGroupCount = ageGroups.length;
-        // Each age group has 2 gender entries: FE then MA (because genders=['FE','MA'] order)
+        // Each age group has 2 sex entries: FE then MA (because sexes=['FE','MA'] order)
         for (let i = 0; i < ageGroupCount; i++) {
             const feIndex = i * 2;
             const maIndex = feIndex + 1;
@@ -153,9 +152,9 @@ export async function loadPopulation() {
             const feValue = feResponse[1][0]?.value ?? null;
             const maValue = maResponse[1][0]?.value ?? null;
 
-            populationData.ageGenderPercentages[ageGroups[i]] = {
-                [GENDER.FEMALE]: feValue,
-                [GENDER.MALE]: maValue
+            populationData.ageSexPercentages[ageGroups[i]] = {
+                [SEX.FEMALE]: feValue,
+                [SEX.MALE]: maValue
             };
         }
 

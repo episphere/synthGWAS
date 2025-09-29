@@ -1,6 +1,6 @@
 self.onmessage = async (e) => {
     const {
-        taskId, snpsInfo, numberOfCases, controlsPerCase, chunkSize, gender,
+        taskId, snpsInfo, numberOfCases, controlsPerCase, chunkSize, sex,
         minAge, maxAge, minFollow, maxFollow, k, b
     } = e.data;
 
@@ -19,7 +19,7 @@ self.onmessage = async (e) => {
             let batchProfiles = await processProfiles(
                 snpsInfo,
                 chunkSize,
-                gender,
+                sex,
                 minAge,
                 maxAge,
                 minFollow,
@@ -42,7 +42,7 @@ self.onmessage = async (e) => {
             let controlProfiles = await processProfiles(
                 snpsInfo,
                 chunkSize * 2,
-                gender,
+                sex,
                 minOnset,
                 maxOnset,
                 minFollow,
@@ -69,6 +69,7 @@ self.onmessage = async (e) => {
             const forageKey = `${taskId}_chunk_${chunkIndex}`;
             await compressAndStoreResults(forageKey, results);
             generatedCases += casesMatched;
+            console.log("Matched ", generatedCases, " cases/controls.");
             chunkIndex++;
             batchProfiles = null;
             controlProfiles = null;

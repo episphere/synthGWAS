@@ -17,22 +17,20 @@ self.onmessage = async (e) => {
 
         const start = performance.now()
         const snpsInfo = await getSnpsInfo(pgsModelFile, ancestry);
-
         let count = 0;
         const test = snpsInfo.forEach(snp=>{
             if (!snp.rsID) count++
         })
-        console.log("COUNT", count)
+        console.log("COUNT for no rsIDs", count)
 
         const end = performance.now()
-        console.log("SNPS INFO: ", end-start)
+        console.log("SNPS INFO processing time: ", end-start)
         const header = await processHeader(snpsInfo);
         const observedIncidenceRate = await parseCsv(incidenceRateFile, { delimiter: ',' });
+        console.log("OBSERVED ", observedIncidenceRate)
         const trainingLP = processPRS(snpsInfo);
         const [k, b] = estimateWeibullParameters(empiricalCdf(observedIncidenceRate), trainingLP);
         const exp_b = Math.exp(b);
-        console.log(k,exp_b)
-        //const [k, exp_b] = [3.6751234798345402, 2.256356405011471e-8]
         const predictedIncidenceRate = generateWeibullIncidenceCurve(k, exp_b, trainingLP, observedIncidenceRate.length);
 
         await localforage.setItem('header', header);

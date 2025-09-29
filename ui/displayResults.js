@@ -348,7 +348,6 @@ export async function renderIncidenceChart(observedIncidenceRate, predictedIncid
                     title: { display: true, text: '↑ Incidence Rate' },
                     beginAtZero: true,
                     min: 0,
-                    max: 0.01
                 }
             }
         }

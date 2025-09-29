@@ -1,8 +1,9 @@
 import { generateAlleleDosage, getRsIdsAndFrequency } from '../syntheticDataGenerator.js';
-import { GENDER } from '../constants.js';
+import { SEX } from '../constants.js';
 
 
 export function processPRS(snpsInfo) {
+    console.log(snpsInfo)
     // Validate SNP data
     if (!snpsInfo.length) {
         throw new Error('No SNPs available for profile generation.');
@@ -86,6 +87,8 @@ export async function processSnpData(snpData, ancestry) {
         }
     });
 
+    snpsInfo = snpsInfo.filter(snp => snp.maf !== null && !isNaN(snp.maf));
+
     return snpsInfo;
 }
 
@@ -97,14 +100,14 @@ export async function processHeader(snpsInfo) {
     }
 
     // Generate header structure
-    const baseHeader = ['id', 'ageOfEntry', 'ageOfExit', 'gender', 'prs', 'case', 'ageOfOnset'];
+    const baseHeader = ['id', 'ageOfEntry', 'ageOfExit', 'sex', 'prs', 'case', 'ageOfOnset'];
     const snpHeaders = snpsInfo.map(snp => snp.id);
 
     return [...baseHeader, ...snpHeaders];
 }
 
 
-export async function processProfiles(snpsInfo, numberOfProfiles, gender, minAge, maxAge, minFollowUp, maxFollowUp, k, b) {
+export async function processProfiles(snpsInfo, numberOfProfiles, sex, minAge, maxAge, minFollowUp, maxFollowUp, k, b) {
     if (!snpsInfo.length) {
         throw new Error('No SNPs available for profile generation.');
     }
@@ -163,7 +166,7 @@ export async function processProfiles(snpsInfo, numberOfProfiles, gender, minAge
             0, // The correct ID will be given at download
             ageOfEntry,
             ageOfExit,
-            gender === GENDER.FEMALE ? 1 : 0,
+            sex === SEX.FEMALE ? 1 : 0,
             prs,
             isCase,
             rawOnset < ageOfExit ? Math.round(rawOnset) : Infinity,
@@ -225,10 +228,10 @@ export function getAgeGroupsBetween(minAge, maxAge, populationAgePercentages) {
         .map(({ group }) => group);
 }
 
-export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, populationData, gender = GENDER.MALE, selectedAgeGroups) {
-    const profilesByAgeGroup = { [GENDER.MALE]: {}, [GENDER.FEMALE]: {} };
+export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, populationData, sex = SEX.MALE, selectedAgeGroups) {
+    const profilesByAgeGroup = { [SEX.MALE]: {}, [SEX.FEMALE]: {} };
 
-    // Compute total population by gender
+    // Compute total population by sex
     let totalFemalePercentage = 0;
     let totalMalePercentage = 0;
 
@@ -236,22 +239,22 @@ export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, pop
     let totalMalePopulation = populationData.totalMalePopulation;
 
     selectedAgeGroups.forEach(group => {
-        totalFemalePercentage += populationData.ageGenderPercentages[group]?.[GENDER.FEMALE] || 0;
-        totalMalePercentage += populationData.ageGenderPercentages[group]?.[GENDER.MALE] || 0;
+        totalFemalePercentage += populationData.ageSexPercentages[group]?.[SEX.FEMALE] || 0;
+        totalMalePercentage += populationData.ageSexPercentages[group]?.[SEX.MALE] || 0;
     });
 
-    if (gender === GENDER.FEMALE || gender === GENDER.MALE) {
-        const genderKey = gender;
-        let totalGenderPercent = 0;
+    if (sex === SEX.FEMALE || sex === SEX.MALE) {
+        const sexKey = sex;
+        let totalSexPercent = 0;
 
         selectedAgeGroups.forEach(group => {
-            totalGenderPercent += populationData.ageGenderPercentages[group]?.[genderKey] || 0;
+            totalSexPercent += populationData.ageSexPercentages[group]?.[sexKey] || 0;
         });
 
-        if (totalGenderPercent === 0) {
+        if (totalSexPercent === 0) {
             const uniformCount = Math.floor(totalProfiles / selectedAgeGroups.length);
             selectedAgeGroups.forEach(group => {
-                profilesByAgeGroup[gender][group] = uniformCount;
+                profilesByAgeGroup[sex][group] = uniformCount;
             });
 
             return profilesByAgeGroup;
@@ -260,9 +263,9 @@ export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, pop
         let totalAssigned = 0;
 
         selectedAgeGroups.forEach(group => {
-            const groupPercent = populationData.ageGenderPercentages[group]?.[genderKey] || 0;
-            const count = Math.round(totalProfiles * (groupPercent / totalGenderPercent));
-            profilesByAgeGroup[gender][group] = count;
+            const groupPercent = populationData.ageSexPercentages[group]?.[sexKey] || 0;
+            const count = Math.round(totalProfiles * (groupPercent / totalSexPercent));
+            profilesByAgeGroup[sex][group] = count;
             totalAssigned += count;
         });
 
@@ -270,7 +273,7 @@ export function distributeProfilesByAgeGroups(totalProfiles, minAge, maxAge, pop
 
         if (diff !== 0) {
             const lastGroup = selectedAgeGroups[selectedAgeGroups.length - 1];
-            profilesByAgeGroup[gender][lastGroup] += diff;
+            profilesByAgeGroup[sex][lastGroup] += diff;
         }
 
         return profilesByAgeGroup;
