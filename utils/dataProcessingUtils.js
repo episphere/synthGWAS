@@ -55,6 +55,7 @@ export async function processSnpData(snpData, ancestry) {
     }
 
     if (indices.hmChromosome === -1 || indices.hmPosition === -1 || indices.hmRsId === -1) {
+        alert('Fatal Error: Some or all allele data are missing in the PGS file.');
         throw new Error('Some or all allele data are missing in the PGS file.');
     }
 
@@ -166,7 +167,7 @@ export async function processProfiles(snpsInfo, numberOfProfiles, sex, minAge, m
             0, // The correct ID will be given at download
             ageOfEntry,
             ageOfExit,
-            sex === SEX.FEMALE ? 1 : 0,
+            sex === SEX.FEMALE ? 2 : 1,
             prs,
             isCase,
             rawOnset < ageOfExit ? Math.round(rawOnset) : Infinity,
@@ -208,7 +209,7 @@ export async function processProfiles(snpsInfo, numberOfProfiles, sex, minAge, m
     //     `   - Case Average PRS: ${(caseAvg / numberOfCases).toFixed(4)}\n` +
     //     `   - Control Average PRS: ${(controlAvg / (data.length - numberOfCases)).toFixed(4)}\n`
     // );
-    console.log('Worker created cohort batch');
+    //console.log('Worker created cohort batch');
 
     return data;
 }

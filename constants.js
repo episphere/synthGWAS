@@ -1,7 +1,6 @@
 export const SEX = {
     MALE: 'male',
-    FEMALE: 'female',
-    BOTH: 'both'
+    FEMALE: 'female'
 };
 
 export const INDEX = {

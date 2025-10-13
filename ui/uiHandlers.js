@@ -72,7 +72,7 @@ async function handleDataGeneration(params) {
             minFollowUp: Number(minFollowUp),
             maxFollowUp: Number(maxFollowUp),
             populationData: populationData,
-            sex: SEX.FEMALE //TODO: sex
+            sex: sex
         };
 
         if (isRetrospective) {
@@ -191,6 +191,7 @@ export function setupInput() {
 
             if (countryISO) {
                 const ageData = await loadPopulation(countryISO);
+
                 await localforage.setItem('populationData', ageData);
             }
         });
@@ -325,7 +326,7 @@ async function generateAndDisplay(params) {
 
         await localforage.setItem('observedIncidenceRate', observedIncidenceRate);
         await localforage.setItem('predictedIncidenceRate', predictedIncidenceRate);
-        //window.location.href = 'results.html';
+        window.location.href = 'results.html';
     } catch (error) {
         console.error('Error generating cohort:', error);
         alert('Failed to generate cohort. Please check your input or try again.');
