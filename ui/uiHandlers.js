@@ -207,7 +207,6 @@ export function setupInput() {
             <option value="${'PGS003394'}">Epithelial Ovarian Cancer (PGS003394)</option>
             <option value="${'PGS004908'}">Kidney Cancer (PGS004908)</option>
             <option value="${'PGS000740'}">Lung Cancer (PGS000740)</option>
-            <option value="${'PGS003765'}">Prostate Cancer (PGS003765)</option>
         `;
 
         const checkbox = document.getElementById('retrospectiveToggle');
